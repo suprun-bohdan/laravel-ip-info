@@ -1,0 +1,144 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SuprunBohdan\IpInfo\Laravel\Console;
+
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
+
+final class UpdateMaxMindCommand extends Command
+{
+    protected $signature = 'ip-info:update-maxmind
+                            {--force : Re-download even if MMDB exists}';
+
+    protected $description = 'Download GeoLite2-Country MMDB from MaxMind.';
+
+    private const DOWNLOAD_URL = 'https://download.maxmind.com/app/geoip_download';
+
+    public function handle(): int
+    {
+        $licenseKey = (string) config('ip-info.maxmind.license_key', '');
+
+        if ($licenseKey === '') {
+            $this->error('Set IP_INFO_MAXMIND_LICENSE_KEY in .env or ip-info.maxmind.license_key.');
+
+            return self::FAILURE;
+        }
+
+        $relativePath = $this->resolveRelativePath();
+        $storagePath = Storage::path($relativePath);
+
+        if (file_exists($storagePath) && ! $this->option('force')) {
+            $this->info('MaxMind database already exists. Use --force to re-download.');
+
+            return self::SUCCESS;
+        }
+
+        $this->info('Downloading GeoLite2-Country...');
+
+        try {
+            $response = Http::timeout(120)->get(self::DOWNLOAD_URL, [
+                'edition_id' => 'GeoLite2-Country',
+                'license_key' => $licenseKey,
+                'suffix' => 'tar.gz',
+            ]);
+
+            if (! $response->ok()) {
+                $this->error('MaxMind download failed with HTTP '.$response->status());
+
+                return self::FAILURE;
+            }
+
+            $tmpArchive = tempnam(sys_get_temp_dir(), 'maxmind_').'.tar.gz';
+            file_put_contents($tmpArchive, $response->body());
+
+            $extractDir = sys_get_temp_dir().'/maxmind_'.uniqid();
+            mkdir($extractDir);
+
+            if (! class_exists(\PharData::class)) {
+                $this->error('ext-phar is required to extract MaxMind archives.');
+
+                return self::FAILURE;
+            }
+
+            $phar = new \PharData($tmpArchive);
+            $tarPath = str_replace('.gz', '', $tmpArchive);
+            $phar->decompress();
+            (new \PharData($tarPath))->extractTo($extractDir);
+
+            $mmdb = $this->findMmdb($extractDir);
+
+            if ($mmdb === null) {
+                $this->error('GeoLite2-Country.mmdb not found in archive.');
+
+                return self::FAILURE;
+            }
+
+            Storage::makeDirectory(dirname($relativePath));
+            copy($mmdb, $storagePath);
+
+            @unlink($tmpArchive);
+            @unlink($tarPath);
+            $this->deleteDirectory($extractDir);
+
+            $this->info('MaxMind database installed at: '.$storagePath);
+
+            return self::SUCCESS;
+        } catch (Throwable $exception) {
+            $this->error('MaxMind update failed: '.$exception->getMessage());
+
+            return self::FAILURE;
+        }
+    }
+
+    private function resolveRelativePath(): string
+    {
+        $configured = (string) config('ip-info.maxmind.database_path', 'geoip/GeoLite2-Country.mmdb');
+
+        if (str_starts_with($configured, storage_path())) {
+            return ltrim(str_replace(storage_path('app'), '', $configured), '/');
+        }
+
+        return $configured;
+    }
+
+    private function findMmdb(string $directory): ?string
+    {
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if ($file->isFile() && str_ends_with($file->getFilename(), '.mmdb')) {
+                return $file->getPathname();
+            }
+        }
+
+        return null;
+    }
+
+    private function deleteDirectory(string $directory): void
+    {
+        if (! is_dir($directory)) {
+            return;
+        }
+
+        $items = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($items as $item) {
+            if ($item->isDir()) {
+                rmdir($item->getPathname());
+            } else {
+                unlink($item->getPathname());
+            }
+        }
+
+        rmdir($directory);
+    }
+}

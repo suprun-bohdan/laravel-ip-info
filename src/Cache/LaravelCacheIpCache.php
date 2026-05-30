@@ -4,37 +4,60 @@ declare(strict_types=1);
 
 namespace SuprunBohdan\IpInfo\Cache;
 
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Contracts\Cache\Repository;
 use SuprunBohdan\IpInfo\Contracts\IpCache;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 
 final class LaravelCacheIpCache implements IpCache
 {
     public function __construct(
-        private ?string $store,
+        private Repository $repository,
         private string $prefix,
         private int $ttl,
+        private int $negativeTtl,
     ) {}
 
     public function get(IpAddress $ip): ?string
     {
-        $value = Cache::store($this->store)->get($this->key($ip));
+        $value = $this->repository->get($this->key($ip));
 
         return is_string($value) ? $value : null;
     }
 
     public function put(IpAddress $ip, string $countryCode): void
     {
-        Cache::store($this->store)->put($this->key($ip), $countryCode, $this->ttl);
+        $this->repository->put($this->key($ip), $countryCode, $this->ttl);
+        $this->forgetNegative($ip);
     }
 
     public function forget(IpAddress $ip): void
     {
-        Cache::store($this->store)->forget($this->key($ip));
+        $this->repository->forget($this->key($ip));
+        $this->forgetNegative($ip);
+    }
+
+    public function hasNegative(IpAddress $ip): bool
+    {
+        return $this->repository->has($this->negativeKey($ip));
+    }
+
+    public function putNegative(IpAddress $ip): void
+    {
+        $this->repository->put($this->negativeKey($ip), true, $this->negativeTtl);
+    }
+
+    public function forgetNegative(IpAddress $ip): void
+    {
+        $this->repository->forget($this->negativeKey($ip));
     }
 
     public function key(IpAddress $ip): string
     {
         return $this->prefix.':v1:'.$ip->value;
+    }
+
+    private function negativeKey(IpAddress $ip): string
+    {
+        return $this->prefix.':neg:v1:'.$ip->value;
     }
 }

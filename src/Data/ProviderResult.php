@@ -18,5 +18,11 @@ final readonly class ProviderResult
         public ?string $countryCode,
         public string $provider,
         public bool $resolved,
+        public ?GeoLocation $geo = null,
     ) {}
+
+    public function geoLocation(): GeoLocation
+    {
+        return $this->geo ?? GeoLocation::fromCountryCode($this->countryCode);
+    }
 }

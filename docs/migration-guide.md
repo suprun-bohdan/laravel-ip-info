@@ -97,6 +97,17 @@ use SuprunBohdan\IpInfo\Laravel\Database\Seeders\IpCountrySeeder;
 
 PSR-4 path: `src/Laravel/Database/Seeders/IpCountrySeeder.php`.
 
+## v2.1+ features
+
+| Feature | Usage |
+|---------|-------|
+| Testing fake | `IpInfo::fake(['8.8.8.8' => 'US'])` |
+| Middleware | `ResolveClientIp` + `--tag=ip-info-middleware` |
+| Install wizard | `php artisan ip-info:install --preset=cloudflare` |
+| MaxMind | `IP_INFO_MAXMIND_ENABLED=true` + `ip-info:update-maxmind` |
+| HTTP drivers | `IP_INFO_HTTP_ENABLED=true`, `IP_INFO_HTTP_DRIVER=ip-api` |
+| Batch lookup | `IpInfo::forMany(['8.8.8.8', '1.1.1.1'])` |
+
 ## Verification checklist
 
 ```bash

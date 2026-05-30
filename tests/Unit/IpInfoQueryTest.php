@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SuprunBohdan\IpInfo\Tests\Unit;
 
+use Illuminate\Contracts\Events\Dispatcher;
 use SuprunBohdan\IpInfo\Cache\NullIpCache;
 use SuprunBohdan\IpInfo\Contracts\IpProvider;
 use SuprunBohdan\IpInfo\Data\IpAddress;
@@ -31,12 +32,14 @@ final class IpInfoQueryTest extends TestCase
             }
         };
 
+        $this->app->instance(IpProvider::class, $provider);
+
         $manager = new IpInfoManager(
             $this->app->make(StringIpResolver::class),
             $this->app->make(RequestIpResolver::class),
             $this->app->make(IpValidator::class),
             new NullIpCache,
-            $provider,
+            $this->app->make(Dispatcher::class),
         );
 
         $query = new IpInfoQuery($manager, new IpAddress('8.8.8.8'));

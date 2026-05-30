@@ -4,6 +4,60 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [3.1.0] - 2026-05-30
+
+### Changed
+
+- HTTP providers inject `IpHttpClient` instead of using `Http` facade in core.
+- `LaravelCacheIpCache` injects `Illuminate\Contracts\Cache\Repository` instead of `Cache` facade.
+- `DatabaseRangeProvider` injects `SchemaInspector` instead of `Schema` facade.
+- `IpInfoManager` injects `Illuminate\Contracts\Events\Dispatcher` instead of `Event` facade.
+- Added PSR-18 HTTP client adapter (`Psr18IpHttpClient`) and Laravel HTTP adapter.
+
+### Added
+
+- `Contracts/IpHttpClient`, `Contracts/SchemaInspector`.
+- [docs/psr-refactor-plan.md](docs/psr-refactor-plan.md).
+- Composer requirements: `psr/http-client`, `psr/http-factory`, `psr/http-message`.
+
+## [3.0.0] - 2026-05-30
+
+### Added
+
+- Optional Laravel Pulse `IpInfoRecorder` (lookup counts, cache hits, top countries).
+- `ip-info:starter` command publishing middleware + config bundle.
+- [docs/vs-alternatives.md](docs/vs-alternatives.md) and [docs/satellite-packages.md](docs/satellite-packages.md).
+
+## [2.3.0] - 2026-05-30
+
+### Added
+
+- Extended `GeoLocation` fields: `countryName`, `continent`, `isEu`.
+- `HttpIpProvider` with `ip-api` and `ipinfo` drivers.
+- Shared `UrlAllowlistGuard` for HTTP provider SSRF protection.
+- `IpInfoResult::shouldLog()` and `IpInfoResult::anonymized()` privacy helpers.
+
+## [2.2.0] - 2026-05-30
+
+### Added
+
+- `MaxMindProvider` and `ip-info:update-maxmind` command.
+- Negative cache (`cache.negative_ttl`) for unresolved public lookups.
+- `IpInfo::forMany()` batch helper.
+- Lookup events: `IpLookupStarted`, `IpLookupCompleted`, `IpLookupFailed`.
+- Benchmark workflow (`.github/workflows/bench.yml`).
+
+## [2.1.0] - 2026-05-30
+
+### Added
+
+- `IpInfo::fake()` and `InteractsWithIpInfo` testing trait.
+- `ResolveClientIp` middleware and `ResolvedClientIpRequest` form request.
+- Config presets: `cloudflare`, `nginx_proxy`, `local_only`.
+- `ip-info:install` command with `--preset` and `--with-database`.
+- Stale offline DB detection in `ip-info:diagnose --json` (non-zero exit when stale).
+- Packagist publish checklist ([docs/PACKAGIST.md](docs/PACKAGIST.md)) and README Quick Start with CI badges.
+
 ## [2.0.0] - 2026-05-30
 
 ### Changed

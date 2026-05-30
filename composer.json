@@ -2,6 +2,8 @@
   "name": "suprun-bohdan/laravel-ip-info",
   "description": "Laravel package for IP detection, normalization, request IP resolution, geo lookup, caching, and infrastructure-aware IP intelligence.",
   "type": "library",
+  "keywords": ["laravel", "ip", "geo", "geolocation", "country", "maxmind", "middleware"],
+  "homepage": "https://github.com/suprun-bohdan/laravel-ip-info",
   "license": "MIT",
   "authors": [
     {
@@ -11,6 +13,9 @@
   ],
   "require": {
     "php": "^8.2",
+    "psr/http-client": "^1.0",
+    "psr/http-factory": "^1.0",
+    "psr/http-message": "^2.0",
     "illuminate/support": "^10.0|^11.0|^12.0",
     "illuminate/http": "^10.0|^11.0|^12.0",
     "illuminate/cache": "^10.0|^11.0|^12.0"
@@ -53,7 +58,11 @@
   },
   "suggest": {
     "ext-redis": "Required when using the redis cache store",
-    "illuminate/database": "Required for DatabaseRangeProvider offline IPv4 lookup"
+    "ext-phar": "Required for ip-info:update-maxmind archive extraction",
+    "illuminate/database": "Required for DatabaseRangeProvider offline IPv4 lookup",
+    "maxmind-db/reader": "Required for MaxMindProvider GeoLite2 lookups",
+    "laravel/pulse": "Optional Laravel Pulse metrics via IpInfoRecorder",
+    "nyholm/psr7": "PSR-17 factories when binding PSR-18 ClientInterface manually"
   },
   "minimum-stability": "stable",
   "prefer-stable": true

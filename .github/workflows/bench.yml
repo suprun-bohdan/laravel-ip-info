@@ -1,0 +1,35 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer require \
+            illuminate/support:12.* \
+            illuminate/http:12.* \
+            illuminate/cache:12.* \
+            illuminate/database:12.* \
+            orchestra/testbench:^10.0 \
+            --no-interaction --no-update
+          composer update --prefer-dist --no-interaction
+
+      - name: Run lookup benchmark
+        run: php bench/lookup.php

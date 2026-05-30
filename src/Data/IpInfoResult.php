@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SuprunBohdan\IpInfo\Data;
 
 use JsonSerializable;
+use SuprunBohdan\IpInfo\Support\IpNormalizer;
 
 final readonly class IpInfoResult implements JsonSerializable
 {
@@ -21,14 +22,42 @@ final readonly class IpInfoResult implements JsonSerializable
         return $this->geo->countryCode;
     }
 
+    public function shouldLog(): bool
+    {
+        return (bool) config('ip-info.privacy.log_lookups', true);
+    }
+
+    public function anonymized(): self
+    {
+        return new self(
+            $this->anonymizeIp($this->ip),
+            $this->geo,
+            $this->isPublic,
+            $this->isPrivate,
+            $this->provider,
+        );
+    }
+
     /**
-     * @return array{ip: string, country: ?string, is_public: bool, is_private: bool, provider: ?string}
+     * @return array{
+     *     ip: string,
+     *     country: ?string,
+     *     country_name: ?string,
+     *     continent: ?string,
+     *     is_eu: ?bool,
+     *     is_public: bool,
+     *     is_private: bool,
+     *     provider: ?string
+     * }
      */
     public function toArray(): array
     {
         return [
             'ip' => $this->ip,
             'country' => $this->countryCode(),
+            'country_name' => $this->geo->countryName,
+            'continent' => $this->geo->continent,
+            'is_eu' => $this->geo->isEu,
             'is_public' => $this->isPublic,
             'is_private' => $this->isPrivate,
             'provider' => $this->provider,
@@ -36,10 +65,37 @@ final readonly class IpInfoResult implements JsonSerializable
     }
 
     /**
-     * @return array{ip: string, country: ?string, is_public: bool, is_private: bool, provider: ?string}
+     * @return array{
+     *     ip: string,
+     *     country: ?string,
+     *     country_name: ?string,
+     *     continent: ?string,
+     *     is_eu: ?bool,
+     *     is_public: bool,
+     *     is_private: bool,
+     *     provider: ?string
+     * }
      */
     public function jsonSerialize(): array
     {
         return $this->toArray();
+    }
+
+    private function anonymizeIp(string $ip): string
+    {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $parts = explode('.', $ip);
+
+            return implode('.', [$parts[0], $parts[1], $parts[2], '0']);
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $normalized = (new IpNormalizer)->normalize($ip);
+            $segments = explode(':', $normalized);
+
+            return implode(':', array_slice($segments, 0, 4)).'::';
+        }
+
+        return $ip;
     }
 }

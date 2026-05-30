@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace SuprunBohdan\IpInfo\Providers;
 
-use Illuminate\Support\Facades\Http;
+use SuprunBohdan\IpInfo\Contracts\IpHttpClient;
 use SuprunBohdan\IpInfo\Contracts\IpProvider;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\ProviderResult;
 use SuprunBohdan\IpInfo\Exceptions\ProviderException;
 use SuprunBohdan\IpInfo\Support\IpValidator;
+use SuprunBohdan\IpInfo\Support\UrlAllowlistGuard;
 
 final class CleanTalkProvider implements IpProvider
 {
     private const ALLOWED_HOST = 'api.cleantalk.org';
 
-    public function __construct(private IpValidator $validator) {}
+    public function __construct(
+        private IpValidator $validator,
+        private IpHttpClient $httpClient,
+    ) {}
 
     public function lookup(IpAddress $ip): ProviderResult
     {
@@ -33,22 +37,23 @@ final class CleanTalkProvider implements IpProvider
             'https://api.cleantalk.org/?method_name=ip_info&ip=%s'
         );
 
-        $this->assertAllowlistedUrl($urlTemplate);
+        UrlAllowlistGuard::assertAllowlisted($urlTemplate, [self::ALLOWED_HOST]);
 
         try {
-            $response = Http::timeout($timeout)
-                ->withOptions(['allow_redirects' => false])
-                ->get(sprintf($urlTemplate, urlencode($ip->value)));
+            $response = $this->httpClient->get(
+                sprintf($urlTemplate, urlencode($ip->value)),
+                $timeout,
+            );
 
             if (! $response->ok()) {
-                throw new ProviderException('CleanTalk request failed with HTTP '.$response->status());
+                throw new ProviderException('CleanTalk request failed with HTTP '.$response->statusCode);
             }
 
-            $data = $response->json();
+            $data = $response->json ?? [];
             $country = $data['data'][$ip->value]['country_code'] ?? null;
 
             if (! is_string($country) || $country === '') {
-                return new ProviderResult(null, 'cleantalk', false);
+                return new ProviderResult(null, 'cleantalk', true);
             }
 
             return new ProviderResult(strtoupper($country), 'cleantalk', true);
@@ -56,17 +61,6 @@ final class CleanTalkProvider implements IpProvider
             throw $exception;
         } catch (\Throwable $exception) {
             throw new ProviderException('CleanTalk provider error: '.$exception->getMessage(), 0, $exception);
-        }
-    }
-
-    private function assertAllowlistedUrl(string $urlTemplate): void
-    {
-        $host = parse_url($urlTemplate, PHP_URL_HOST);
-
-        if (! is_string($host) || strtolower($host) !== self::ALLOWED_HOST) {
-            throw new ProviderException(
-                'CleanTalk URL host must be '.self::ALLOWED_HOST.', got '.($host ?? 'none').'.'
-            );
         }
     }
 }

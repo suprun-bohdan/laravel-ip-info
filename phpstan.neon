@@ -7,3 +7,7 @@ parameters:
         - src
     excludePaths:
         - src/config
+    ignoreErrors:
+        -
+            message: '#Trait SuprunBohdan\\IpInfo\\Testing\\InteractsWithIpInfo is used zero times#'
+            path: src/Testing/InteractsWithIpInfo.php

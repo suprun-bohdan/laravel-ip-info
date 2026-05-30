@@ -13,4 +13,10 @@ interface IpCache
     public function put(IpAddress $ip, string $countryCode): void;
 
     public function forget(IpAddress $ip): void;
+
+    public function hasNegative(IpAddress $ip): bool;
+
+    public function putNegative(IpAddress $ip): void;
+
+    public function forgetNegative(IpAddress $ip): void;
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace SuprunBohdan\IpInfo\Providers;
 
-use Illuminate\Support\Facades\Schema;
 use SuprunBohdan\IpInfo\Contracts\IpProvider;
+use SuprunBohdan\IpInfo\Contracts\SchemaInspector;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\ProviderResult;
 use SuprunBohdan\IpInfo\Laravel\Models\IpCountry;
@@ -16,7 +16,10 @@ final class DatabaseRangeProvider implements IpProvider
 {
     private ?bool $tableExists = null;
 
-    public function __construct(private IpValidator $validator) {}
+    public function __construct(
+        private IpValidator $validator,
+        private SchemaInspector $schema,
+    ) {}
 
     public function lookup(IpAddress $ip): ProviderResult
     {
@@ -46,10 +49,25 @@ final class DatabaseRangeProvider implements IpProvider
         return new ProviderResult(null, 'database', false);
     }
 
+    /**
+     * @param  list<IpAddress>  $addresses
+     * @return array<string, ProviderResult>
+     */
+    public function lookupMany(array $addresses): array
+    {
+        $results = [];
+
+        foreach ($addresses as $address) {
+            $results[$address->value] = $this->lookup($address);
+        }
+
+        return $results;
+    }
+
     private function hasTable(): bool
     {
         if ($this->tableExists === null) {
-            $this->tableExists = Schema::hasTable('ip_country');
+            $this->tableExists = $this->schema->hasTable('ip_country');
         }
 
         return $this->tableExists;

@@ -18,6 +18,8 @@ final class DiagnoseIpCommandTest extends TestCase
         $payload = json_decode(Artisan::output(), true, 512, JSON_THROW_ON_ERROR);
 
         $this->assertSame('suprun-bohdan/laravel-ip-info', $payload['package']);
+        $this->assertArrayHasKey('healthy', $payload);
+        $this->assertTrue($payload['healthy']);
         $this->assertArrayHasKey('settings', $payload);
         $this->assertSame('127.0.0.1', $payload['lookup']['ip']);
         $this->assertTrue($payload['lookup']['is_private']);

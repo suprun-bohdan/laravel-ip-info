@@ -1,8 +1,53 @@
 # Laravel IP Info
 
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/suprun-bohdan/laravel-ip-info.svg?style=flat-square)](https://packagist.org/packages/suprun-bohdan/laravel-ip-info)
+[![Tests](https://github.com/suprun-bohdan/laravel-ip-info/actions/workflows/tests.yml/badge.svg)](https://github.com/suprun-bohdan/laravel-ip-info/actions/workflows/tests.yml)
+[![Benchmarks](https://github.com/suprun-bohdan/laravel-ip-info/actions/workflows/bench.yml/badge.svg)](https://github.com/suprun-bohdan/laravel-ip-info/actions/workflows/bench.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Laravel package for IP detection, normalization, request IP resolution, geo lookup, caching, and infrastructure-aware IP intelligence.
 
 Author: [Bohdan Suprun](mailto:bohdan-suprun@outlook.com)
+
+## Quick Start
+
+```bash
+composer require suprun-bohdan/laravel-ip-info
+php artisan ip-info:install
+```
+
+```php
+use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
+
+$country = IpInfo::for('8.8.8.8')->countryCode(); // "US"
+$client = IpInfo::forRequest(request())->countryCode();
+```
+
+Testing:
+
+```php
+use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
+use SuprunBohdan\IpInfo\Testing\InteractsWithIpInfo;
+
+class ExampleTest extends TestCase
+{
+    use InteractsWithIpInfo;
+
+    public function test_country(): void
+    {
+        $this->fakeIpInfo(['203.0.113.1' => 'UA']);
+
+        $this->assertSame('UA', IpInfo::for('203.0.113.1')->countryCode());
+    }
+}
+```
+
+Middleware (Cloudflare preset):
+
+```bash
+php artisan vendor:publish --tag=ip-info-middleware
+# .env: IP_INFO_PRESET=cloudflare
+```
 
 ## What this package does
 
@@ -12,59 +57,56 @@ Author: [Bohdan Suprun](mailto:bohdan-suprun@outlook.com)
 - Looks up country codes through a provider chain:
   - `LocalProvider` — private/local/reserved IPs (no external call)
   - `DatabaseRangeProvider` — optional offline IPv4 ranges
+  - `MaxMindProvider` — optional offline GeoLite2 MMDB
+  - `HttpIpProvider` — optional HTTP drivers (`ip-api`, `ipinfo`)
   - `CleanTalkProvider` — optional HTTP fallback
-- Caches public IP lookups via Laravel cache stores.
-- Optional HTTP endpoint and Artisan commands for install, update, and diagnostics.
-
-## What this package does not do
-
-- City/region/coordinates/ASN geo data.
-- IPv6 offline range database (offline DB is IPv4-only).
-- Blind trust of `X-Forwarded-For` or `CF-Connecting-IP` unless configured in `ip-info.trusted_proxies.headers`.
-- Timezone-based country guessing.
+- Caches public IP lookups via Laravel cache stores (with negative cache).
+- Optional HTTP endpoint, middleware, and Artisan commands.
 
 ## Requirements
 
 - PHP ^8.2
 - Laravel ^10, ^11, or ^12
 - Laravel cache (array, file, redis, etc.)
-- Database optional (only for offline IPv4 lookup)
+- Database optional (offline IPv4 lookup)
+- `maxmind-db/reader` optional (MaxMind MMDB lookup)
 
 ## Installation
 
 ```bash
 composer require suprun-bohdan/laravel-ip-info
+php artisan ip-info:install
+php artisan ip-info:install --preset=cloudflare
+php artisan ip-info:install --with-database
 ```
 
-Publish configuration:
+Publish configuration only:
 
 ```bash
 php artisan vendor:publish --tag=ip-info-config
 ```
 
-Optional offline database setup:
+Optional offline database:
 
 ```bash
-# enable in .env: IP_INFO_DATABASE_ENABLED=true
+# .env: IP_INFO_DATABASE_ENABLED=true
 php artisan ip-info:install-database
 ```
 
-Update the offline database later:
+Optional MaxMind GeoLite2:
 
 ```bash
-php artisan ip-info:update-database
-php artisan ip-info:update-database --force
+# .env: IP_INFO_MAXMIND_ENABLED=true, IP_INFO_MAXMIND_LICENSE_KEY=...
+composer require maxmind-db/reader
+php artisan ip-info:update-maxmind
 ```
 
 Diagnostics:
 
 ```bash
 php artisan ip-info:diagnose
-php artisan ip-info:diagnose 8.8.8.8
 php artisan ip-info:diagnose 8.8.8.8 --json
 ```
-
-JSON output is suitable for CI scripts and monitoring checks.
 
 ## Configuration
 
@@ -72,142 +114,34 @@ File: `config/ip-info.php`
 
 | Section | Purpose |
 |---------|---------|
-| `cache` | Enable/disable cache, store, TTL, key prefix |
-| `providers.chain` | Provider order: `local`, `database`, `cleantalk` |
-| `providers.custom` | Additional container-resolvable `IpProvider` class names |
-| `database.enabled` | Enable offline IPv4 table lookup |
-| `cleantalk.enabled` | Enable CleanTalk HTTP provider |
-| `routes.enabled` | Register bundled HTTP route (default: `false`) |
-| `trusted_proxies` | Laravel proxy behavior and optional trusted headers |
+| `cache` | Enable/disable cache, store, TTL, negative TTL, key prefix |
+| `providers.chain` | Provider order: `local`, `database`, `maxmind`, `http`, `cleantalk` |
+| `presets` | Named proxy/provider presets (`cloudflare`, `nginx_proxy`, `local_only`) |
+| `maxmind` | GeoLite2 MMDB path and license key |
+| `http` | HTTP driver selection and timeouts |
+| `privacy` | Logging and anonymization helpers |
 
-Environment variables use the `IP_INFO_*` prefix (see config file).
+See [docs/migration-guide.md](docs/migration-guide.md) and [docs/roadmap-v3.md](docs/roadmap-v3.md).
 
-## Basic usage
+## Commands
 
-```php
-use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
+| Command | Description |
+|---------|-------------|
+| `ip-info:install` | Publish config, migrate, optional preset/database |
+| `ip-info:install-database` | Download IPv4 CSV and seed offline DB |
+| `ip-info:update-database` | Refresh offline CSV database |
+| `ip-info:update-maxmind` | Download GeoLite2-Country MMDB |
+| `ip-info:diagnose` | Configuration and lookup diagnostics |
+| `ip-info:starter` | Publish starter middleware/config bundle |
 
-$country = IpInfo::for('8.8.8.8')->countryCode();
-$geo = IpInfo::for('8.8.8.8')->geo();
-$isPublic = IpInfo::for('8.8.8.8')->isPublic();
-$isPrivate = IpInfo::for('127.0.0.1')->isPrivate();
-$payload = IpInfo::for('8.8.8.8')->result()->toArray();
-```
+## Development
 
-## Request IP resolution
-
-```php
-use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
-
-$ip = IpInfo::forRequest($request)->ip();
-$country = IpInfo::forRequest($request)->countryCode();
-```
-
-By default, only Laravel's `$request->ip()` is used. Custom headers are honored **only** when listed in `config('ip-info.trusted_proxies.headers')`.
-
-Example for Cloudflare:
-
-```php
-// config/ip-info.php
-'trusted_proxies' => [
-    'respect_laravel' => true,
-    'headers' => ['CF-Connecting-IP'],
-],
-```
-
-Example for reverse proxy behind trusted infrastructure:
-
-```php
-'trusted_proxies' => [
-    'respect_laravel' => true,
-    'headers' => ['X-Forwarded-For', 'X-Real-IP'],
-],
-```
-
-### Trusted proxy warning
-
-Do not add `X-Forwarded-For`, `X-Real-IP`, or `CF-Connecting-IP` to trusted headers unless your infrastructure strips untrusted values before they reach PHP. Spoofed headers can otherwise replace the client IP.
-
-## Provider lookup
-
-Lookup order is configured in `providers.chain`.
-
-- Private/local/reserved IPs stop at `LocalProvider` and return `null` country without external calls.
-- Public IPv4 may match the offline `ip_country` table when `database.enabled=true`.
-- CleanTalk is optional and disabled by default.
-
-### Custom providers
-
-Register additional providers in config:
-
-```php
-'providers' => [
-    'custom' => [
-        App\Geo\CustomIpProvider::class,
-    ],
-],
-```
-
-Or append providers when the `SuprunBohdan\IpInfo\Laravel\Events\IpInfoBuildingChain` event is dispatched during container registration.
-
-## Cache behavior
-
-- Enabled via `cache.enabled`.
-- Uses Laravel cache stores (`cache.store`, `null` = default store).
-- Keys: `{prefix}:v1:{ip}`.
-- Private/local/reserved results are not cached.
-- Failed lookups are not cached.
-
-## HTTP endpoint (optional)
-
-When `routes.enabled=true`:
-
-- Path: `config('ip-info.routes.path')` (default `/ip-info`)
-- Methods: GET, POST
-- Returns JSON: `ip`, `country`, `is_public`, `is_private`, `provider`
-
-## IPv4 / IPv6 support
-
-| Feature | IPv4 | IPv6 |
-|---------|------|------|
-| Validation | yes | yes |
-| Public/private classification | yes | yes |
-| Offline DB lookup | yes | no |
-| External provider (CleanTalk) | yes | yes |
-
-## Testing
+Local Docker sandbox (gitignored):
 
 ```bash
-composer install
-composer test
-composer analyse
-composer format:test
+cd sandbox && make init && make test
+make test-package   # PHPUnit + PHPStan in package root
 ```
-
-## Development (local Docker sandbox)
-
-The repository includes a **local-only** Docker sandbox under `/sandbox/` (gitignored). It bootstraps Laravel 12 with a path repository to this package.
-
-```bash
-cd sandbox
-make init          # Laravel app + composer path link
-make start         # http://localhost:8088
-make test          # pint, phpstan, phpunit + IP scenario matrix
-make test-package
-make test-scenarios
-make shell
-make stop
-```
-
-Sandbox files are not published with the Composer package.
-
-## Migration
-
-Upgrading from legacy `suprun-bohdan/laravel-ip-info` or pre-refactor APIs: see [docs/migration-guide.md](docs/migration-guide.md).
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

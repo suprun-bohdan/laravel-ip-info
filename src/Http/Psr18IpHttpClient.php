@@ -9,6 +9,14 @@ use Psr\Http\Message\RequestFactoryInterface;
 use SuprunBohdan\IpInfo\Contracts\IpHttpClient;
 use SuprunBohdan\IpInfo\Exceptions\ProviderException;
 
+/**
+ * PSR-18 HTTP adapter.
+ *
+ * The `$timeoutSeconds` argument is accepted for interface compatibility but is
+ * **not enforced** here because PSR-18 does not define timeout configuration.
+ * Configure timeouts on the injected {@see ClientInterface} implementation, or
+ * use {@see LaravelIpHttpClient} which enforces timeout via Laravel HTTP.
+ */
 final class Psr18IpHttpClient implements IpHttpClient
 {
     public function __construct(

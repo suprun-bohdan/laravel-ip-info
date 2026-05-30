@@ -42,7 +42,7 @@ final class CleanTalkProviderTest extends TestCase
         $this->assertFalse($result->resolved);
     }
 
-    public function test_it_throws_on_http_failure_for_chain_fallback(): void
+    public function test_it_soft_fails_on_http_500_for_chain_fallback(): void
     {
         Http::fake([
             '*' => Http::response('', 500),
@@ -51,9 +51,9 @@ final class CleanTalkProviderTest extends TestCase
         $this->app['config']->set('ip-info.cleantalk.enabled', true);
 
         $provider = $this->app->make(CleanTalkProvider::class);
+        $result = $provider->lookup(new IpAddress('8.8.8.8'));
 
-        $this->expectException(ProviderException::class);
-        $provider->lookup(new IpAddress('8.8.8.8'));
+        $this->assertFalse($result->resolved);
     }
 
     public function test_it_rejects_non_allowlisted_cleantalk_host(): void

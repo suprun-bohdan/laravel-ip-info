@@ -1,5 +1,7 @@
 <?php
 
+// @ip-info-stub-version 4.1.0
+
 declare(strict_types=1);
 
 namespace SuprunBohdan\IpInfo\Laravel\Http\Middleware;

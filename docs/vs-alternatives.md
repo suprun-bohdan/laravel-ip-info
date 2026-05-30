@@ -15,7 +15,10 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 | `IpInfo::fake()` testing | Yes |
 | Negative cache | Yes |
 | HTTP drivers (ip-api, ipinfo) | Yes |
-| City/ASN geo in core | No (by design) |
+| HTTP circuit breaker + 429 soft-fail | Yes |
+| Geo block/allow middleware | Yes |
+| Queue batch lookup | Yes |
+| City/ASN geo in core | No (satellite packages) |
 
 ## torann/geoip
 

@@ -53,11 +53,32 @@ final class LaravelCacheIpCache implements IpCache
 
     public function key(IpAddress $ip): string
     {
-        return $this->prefix.':v1:'.$ip->value;
+        return $this->effectivePrefix().':v1:'.$ip->value;
     }
 
     private function negativeKey(IpAddress $ip): string
     {
-        return $this->prefix.':neg:v1:'.$ip->value;
+        return $this->effectivePrefix().':neg:v1:'.$ip->value;
+    }
+
+    private function effectivePrefix(): string
+    {
+        $prefix = $this->prefix;
+
+        if (function_exists('app') && app()->bound('ip-info.runtime_cache_prefix')) {
+            $runtime = app('ip-info.runtime_cache_prefix');
+
+            if (is_string($runtime) && $runtime !== '') {
+                $prefix .= ':'.$runtime;
+            }
+        }
+
+        $tenant = config('ip-info.cache.tenant_prefix');
+
+        if (is_string($tenant) && $tenant !== '') {
+            $prefix .= ':'.$tenant;
+        }
+
+        return $prefix;
     }
 }

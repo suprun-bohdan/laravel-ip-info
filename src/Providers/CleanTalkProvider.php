@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace SuprunBohdan\IpInfo\Providers;
 
-use SuprunBohdan\IpInfo\Contracts\IpHttpClient;
 use SuprunBohdan\IpInfo\Contracts\IpProvider;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\ProviderResult;
 use SuprunBohdan\IpInfo\Exceptions\ProviderException;
+use SuprunBohdan\IpInfo\Http\ResilientHttpExecutor;
 use SuprunBohdan\IpInfo\Support\IpValidator;
 use SuprunBohdan\IpInfo\Support\UrlAllowlistGuard;
 
@@ -18,17 +18,17 @@ final class CleanTalkProvider implements IpProvider
 
     public function __construct(
         private IpValidator $validator,
-        private IpHttpClient $httpClient,
+        private ResilientHttpExecutor $http,
     ) {}
 
     public function lookup(IpAddress $ip): ProviderResult
     {
         if (! config('ip-info.cleantalk.enabled', false)) {
-            return new ProviderResult(null, 'cleantalk', false);
+            return ProviderResult::skipped('cleantalk');
         }
 
         if (! $this->validator->isPublic($ip->value)) {
-            return new ProviderResult(null, 'cleantalk', false);
+            return ProviderResult::skipped('cleantalk');
         }
 
         $timeout = (int) config('ip-info.cleantalk.timeout', 3);
@@ -39,24 +39,23 @@ final class CleanTalkProvider implements IpProvider
 
         UrlAllowlistGuard::assertAllowlisted($urlTemplate, [self::ALLOWED_HOST]);
 
-        try {
-            $response = $this->httpClient->get(
-                sprintf($urlTemplate, urlencode($ip->value)),
-                $timeout,
-            );
+        $url = sprintf($urlTemplate, urlencode($ip->value));
 
-            if (! $response->ok()) {
-                throw new ProviderException('CleanTalk request failed with HTTP '.$response->statusCode);
+        try {
+            $result = $this->http->get('cleantalk', $url, $timeout, 'ip-info.cleantalk');
+
+            if ($result['soft_fail'] || $result['response'] === null) {
+                return ProviderResult::failed('cleantalk', 'HTTP soft-fail or empty response.');
             }
 
-            $data = $response->json ?? [];
+            $data = $result['response']->json ?? [];
             $country = $data['data'][$ip->value]['country_code'] ?? null;
 
             if (! is_string($country) || $country === '') {
-                return new ProviderResult(null, 'cleantalk', true);
+                return ProviderResult::miss('cleantalk');
             }
 
-            return new ProviderResult(strtoupper($country), 'cleantalk', true);
+            return ProviderResult::hit(strtoupper($country), 'cleantalk');
         } catch (ProviderException $exception) {
             throw $exception;
         } catch (\Throwable $exception) {

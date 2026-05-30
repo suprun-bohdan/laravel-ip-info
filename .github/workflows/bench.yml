@@ -33,3 +33,6 @@ jobs:
 
       - name: Run lookup benchmark
         run: php bench/lookup.php
+
+      - name: Run batch benchmark
+        run: php bench/batch.php

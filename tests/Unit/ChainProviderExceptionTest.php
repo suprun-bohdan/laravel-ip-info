@@ -27,7 +27,7 @@ final class ChainProviderExceptionTest extends TestCase
         {
             public function lookup(IpAddress $ip): ProviderResult
             {
-                return new ProviderResult('UA', 'custom', true);
+                return ProviderResult::hit('UA', 'custom');
             }
         };
 

@@ -11,6 +11,7 @@ use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\ProviderResult;
 use SuprunBohdan\IpInfo\Laravel\IpInfoManager;
 use SuprunBohdan\IpInfo\Laravel\IpInfoQuery;
+use SuprunBohdan\IpInfo\Providers\MutableIpProviderResolver;
 use SuprunBohdan\IpInfo\Resolvers\RequestIpResolver;
 use SuprunBohdan\IpInfo\Resolvers\StringIpResolver;
 use SuprunBohdan\IpInfo\Support\IpValidator;
@@ -28,11 +29,11 @@ final class IpInfoQueryTest extends TestCase
             {
                 $this->calls++;
 
-                return new ProviderResult('US', 'test', true);
+                return ProviderResult::hit('US', 'test');
             }
         };
 
-        $this->app->instance(IpProvider::class, $provider);
+        $resolver = new MutableIpProviderResolver($provider);
 
         $manager = new IpInfoManager(
             $this->app->make(StringIpResolver::class),
@@ -40,6 +41,7 @@ final class IpInfoQueryTest extends TestCase
             $this->app->make(IpValidator::class),
             new NullIpCache,
             $this->app->make(Dispatcher::class),
+            $resolver,
         );
 
         $query = new IpInfoQuery($manager, new IpAddress('8.8.8.8'));

@@ -7,6 +7,7 @@ namespace SuprunBohdan\IpInfo\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use SuprunBohdan\IpInfo\Contracts\IpProvider;
+use SuprunBohdan\IpInfo\Contracts\IpProviderResolver;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\ProviderResult;
 use SuprunBohdan\IpInfo\Laravel\Events\IpInfoBuildingChain;
@@ -84,6 +85,7 @@ final class CustomProviderChainTest extends TestCase
 
         $this->app->forgetInstance(IpInfoManager::class);
         $this->app->forgetInstance(IpProvider::class);
+        $this->app->forgetInstance(IpProviderResolver::class);
         $this->app->forgetInstance('ip-info');
 
         $this->assertSame('XX', IpInfo::for('8.8.8.8')->countryCode());
@@ -97,6 +99,7 @@ final class CustomProviderChainTest extends TestCase
 
         $this->app->forgetInstance(IpInfoManager::class);
         $this->app->forgetInstance(IpProvider::class);
+        $this->app->forgetInstance(IpProviderResolver::class);
         $this->app->forgetInstance('ip-info');
 
         $this->assertSame('XX', IpInfo::for('8.8.8.8')->countryCode());
@@ -107,6 +110,6 @@ final class StubCountryProvider implements IpProvider
 {
     public function lookup(IpAddress $ip): ProviderResult
     {
-        return new ProviderResult('XX', 'stub', true);
+        return ProviderResult::hit('XX', 'stub');
     }
 }

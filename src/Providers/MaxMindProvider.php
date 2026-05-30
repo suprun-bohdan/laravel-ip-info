@@ -18,21 +18,21 @@ final class MaxMindProvider implements IpProvider
     public function lookup(IpAddress $ip): ProviderResult
     {
         if (! config('ip-info.maxmind.enabled', false)) {
-            return new ProviderResult(null, 'maxmind', false);
+            return ProviderResult::skipped('maxmind');
         }
 
         if (! $this->validator->isPublic($ip->value)) {
-            return new ProviderResult(null, 'maxmind', false);
+            return ProviderResult::skipped('maxmind');
         }
 
         if (! class_exists(Reader::class)) {
-            return new ProviderResult(null, 'maxmind', false);
+            return ProviderResult::skipped('maxmind');
         }
 
         $path = (string) config('ip-info.maxmind.database_path', '');
 
         if ($path === '' || ! is_readable($path)) {
-            return new ProviderResult(null, 'maxmind', false);
+            return ProviderResult::skipped('maxmind');
         }
 
         try {
@@ -42,7 +42,7 @@ final class MaxMindProvider implements IpProvider
             $reader->close();
 
             if (! is_array($record)) {
-                return new ProviderResult(null, 'maxmind', true);
+                return ProviderResult::miss('maxmind');
             }
 
             $countryCode = isset($record['country']) && is_array($record['country'])
@@ -50,7 +50,7 @@ final class MaxMindProvider implements IpProvider
                 : ($record['country_code'] ?? null);
 
             if (! is_string($countryCode) || $countryCode === '') {
-                return new ProviderResult(null, 'maxmind', true);
+                return ProviderResult::miss('maxmind');
             }
 
             $countryCode = strtoupper($countryCode);
@@ -70,9 +70,9 @@ final class MaxMindProvider implements IpProvider
                     : null,
             );
 
-            return new ProviderResult($countryCode, 'maxmind', true, $geo);
+            return ProviderResult::hit($countryCode, 'maxmind', $geo);
         } catch (\Throwable) {
-            return new ProviderResult(null, 'maxmind', false);
+            return ProviderResult::skipped('maxmind');
         }
     }
 }

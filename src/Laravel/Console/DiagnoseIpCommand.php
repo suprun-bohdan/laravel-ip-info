@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace SuprunBohdan\IpInfo\Laravel\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Schema;
+use SuprunBohdan\IpInfo\Http\HttpCircuitBreaker;
 use SuprunBohdan\IpInfo\Laravel\IpInfoManager;
-use SuprunBohdan\IpInfo\Laravel\Support\CsvFilePathService;
+use SuprunBohdan\IpInfo\Laravel\Sync\HealthChecker;
 
 final class DiagnoseIpCommand extends Command
 {
@@ -17,14 +17,20 @@ final class DiagnoseIpCommand extends Command
 
     protected $description = 'Show package configuration and optional IP diagnostics.';
 
-    public function __construct(private CsvFilePathService $csvFilePathService)
-    {
+    public function __construct(
+        private HealthChecker $healthChecker,
+        private HttpCircuitBreaker $circuitBreaker,
+    ) {
         parent::__construct();
     }
 
     public function handle(IpInfoManager $ipInfo): int
     {
-        $databaseStale = $this->databaseIsStale();
+        $databaseStale = $this->healthChecker->databaseIsStale();
+        $maxmindStale = $this->healthChecker->maxmindIsStale();
+        $maxmindReadable = $this->healthChecker->maxmindIsReadable();
+        $driver = (string) config('ip-info.http.driver', 'ip-api');
+
         $settings = [
             'cache.enabled' => (bool) config('ip-info.cache.enabled'),
             'cache.store' => config('ip-info.cache.store') ?? 'default',
@@ -33,10 +39,16 @@ final class DiagnoseIpCommand extends Command
             'database.enabled' => (bool) config('ip-info.database.enabled'),
             'database.stale' => $databaseStale,
             'maxmind.enabled' => (bool) config('ip-info.maxmind.enabled'),
+            'maxmind.stale' => $maxmindStale,
+            'maxmind.readable' => $maxmindReadable,
             'http.enabled' => (bool) config('ip-info.http.enabled'),
+            'http.circuit_open' => $this->circuitBreaker->isOpen('http:'.$driver),
             'cleantalk.enabled' => (bool) config('ip-info.cleantalk.enabled'),
+            'cleantalk.circuit_open' => $this->circuitBreaker->isOpen('cleantalk'),
             'routes.enabled' => (bool) config('ip-info.routes.enabled'),
-            'ip_country_table' => Schema::hasTable('ip_country') ? 'present' : 'missing',
+            'privacy.redact_headers' => (bool) config('ip-info.privacy.redact_headers', false),
+            'trusted_proxies.headers' => $this->formatTrustedHeaders(),
+            'ip_country_table' => $this->healthChecker->ipCountryTablePresent() ? 'present' : 'missing',
         ];
 
         $ip = $this->argument('ip');
@@ -46,7 +58,7 @@ final class DiagnoseIpCommand extends Command
             $lookup = $ipInfo->for($ip)->result()->toArray();
         }
 
-        $healthy = ! $databaseStale;
+        $healthy = $this->healthChecker->isDataHealthy();
 
         if ($this->option('json')) {
             $this->line(json_encode([
@@ -70,6 +82,13 @@ final class DiagnoseIpCommand extends Command
             $this->warn('Offline database CSV is missing or stale. Run ip-info:update-database.');
         }
 
+        if ($maxmindStale) {
+            $this->warn('MaxMind database is missing or stale. Run ip-info:update-maxmind.');
+        }
+
+        $this->newLine();
+        $this->line('Application integration: php artisan ip-info:sync --json');
+
         if ($lookup !== null) {
             $this->newLine();
             $this->table(['Field', 'Value'], collect($lookup)->map(
@@ -80,21 +99,24 @@ final class DiagnoseIpCommand extends Command
         return $healthy ? self::SUCCESS : self::FAILURE;
     }
 
-    private function databaseIsStale(): bool
+    /**
+     * @return list<string>
+     */
+    private function formatTrustedHeaders(): array
     {
-        if (! config('ip-info.database.enabled', false)) {
-            return false;
+        $headers = config('ip-info.trusted_proxies.headers', []);
+
+        if (! is_array($headers)) {
+            return [];
         }
 
-        $path = $this->csvFilePathService->getCsvFilePath();
-        $staleDays = (int) config('ip-info.database.stale_days', 30);
-
-        if (! file_exists($path)) {
-            return true;
+        if (! config('ip-info.privacy.redact_headers', false)) {
+            return array_values(array_map('strval', $headers));
         }
 
-        $ageSeconds = time() - (int) filemtime($path);
-
-        return $ageSeconds > ($staleDays * 86400);
+        return array_map(
+            fn (mixed $header): string => is_string($header) ? '[redacted:'.$header.']' : '[redacted]',
+            $headers,
+        );
     }
 }

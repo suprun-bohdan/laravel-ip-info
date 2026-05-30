@@ -4,6 +4,77 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Changed
+
+- **Refactor:** `IpInfoManager` injects `IpProviderResolver` instead of calling `app(IpProvider::class)`.
+- **Refactor:** `ProviderResult` uses explicit `ProviderStatus` enum (`skipped`, `failed`, `miss`, `hit`). Deprecated `$resolved` preserved for BC.
+- **Security:** Trusted headers require matching `trusted_proxies.proxy_cidrs` by default.
+- **Security:** HTTP providers reject insecure `http://` URLs unless `http.allow_insecure=true`. Default driver is `ipinfo` (HTTPS).
+- **Testing:** `IpInfo::fake()` bypasses positive/negative cache and skips cache writes.
+- **DX:** `IpPrivacyPolicy` owns logging policy; `IpInfoResult::shouldLog()` deprecated.
+- **Fix:** `ip-info.pulse.enabled=false` disables Pulse recorder registration.
+- **Fix:** `ip-info:install --preset` documents that runtime preset must be persisted manually.
+
+### Added
+
+- `php artisan ip-info:sync` — application integration audit (`--json`, `--fix`, `--publish-config`, `--publish-middleware`, `--check-routes`, `--force`).
+- `routes.middleware` config / `IP_INFO_ROUTE_MIDDLEWARE` for opt-in route protection.
+- `@ip-info-stub-version` markers for version-aware published file comparison.
+- Sync layer: `IpInfoSyncInspector`, `IpInfoSyncFixer`, `HealthChecker` (shared with diagnose).
+
+### Changed
+
+- `ip-info:diagnose` delegates database/MaxMind stale checks to `HealthChecker` and links to `ip-info:sync`.
+- `ip-info:starter` runs `ip-info:sync` after publish instead of hardcoded middleware instructions.
+
+- `CidrMatcher`, `IpProviderResolver`, `MutableIpProviderResolver`, `ProviderStatus`.
+- `ChainProvider::lookupMany()` batch chain resolution.
+- Tests: fake cache override, trusted proxy CIDR, URL allowlist HTTPS guard.
+
+## [4.0.0] - 2026-05-30
+
+### Added
+
+- `ProcessIpLookups` queue job and `IpInfo::forManyQueued()`.
+- `IpLookupsBatchCompleted` event.
+- Optional `IpInfoTelescopeRecorder` for Laravel Telescope.
+- Pulse Livewire `IpInfoCard` component and view.
+- Satellite MVP specs for ASN and fraud packages in [docs/satellite-packages.md](docs/satellite-packages.md).
+
+## [3.4.0] - 2026-05-30
+
+### Added
+
+- `IpInfo::fakeSequence()`, `IpInfo::assertLookedUp()`, `IpInfo::withCachePrefix()`.
+- `ip-info:about` capability matrix command.
+- Request-scoped lookup memoization (`lookup.request_memo`).
+- `GeoLocation::isEu()`, `isInContinent()`, `countryNameOrCode()`.
+- `IpInfoResult::forLogging()`, `toMinimalArray()`, `isEu()`, `isInContinent()`.
+
+## [3.3.0] - 2026-05-30
+
+### Added
+
+- Validation rules: `ClientIpPublic`, `CountryIn`.
+- Middleware: `BlockCountries`, `AllowCountries`.
+- Preset `cloudflare_strict` (CF-Connecting-IP only).
+- `privacy.skip_private_ips`, `privacy.redact_headers`, `cache.tenant_prefix`.
+- `security.blocked_countries` / `security.allowed_countries` config.
+- `trusted_proxies.sync_with_laravel` documentation flag.
+
+## [3.2.0] - 2026-05-30
+
+### Added
+
+- HTTP resilience: 429/5xx soft-fail, retries, circuit breaker (`HttpCircuitBreaker`).
+- Optimized `DatabaseRangeProvider::lookupMany()` bounding-box batch query.
+- `IpInfoManager::forMany()` cache-first batch resolution.
+- MaxMind stale/readable checks in `ip-info:diagnose --json`.
+- `ip-info:publish-schedule` command for weekly update stubs.
+- `BatchIpProvider` contract.
+
 ## [3.1.0] - 2026-05-30
 
 ### Changed

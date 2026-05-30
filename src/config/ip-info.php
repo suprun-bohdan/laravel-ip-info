@@ -1,5 +1,7 @@
 <?php
 
+// @ip-info-stub-version 4.1.0
+
 declare(strict_types=1);
 
 return [
@@ -7,12 +9,6 @@ return [
     |--------------------------------------------------------------------------
     | Cache
     |--------------------------------------------------------------------------
-    |
-    | Public IP country lookups are cached via Laravel cache stores.
-    | Private/local/reserved addresses are never cached.
-    |
-    | Env: IP_INFO_CACHE_ENABLED, IP_INFO_CACHE_STORE,
-    |      IP_INFO_CACHE_TTL, IP_INFO_CACHE_NEGATIVE_TTL, IP_INFO_CACHE_PREFIX
     */
     'cache' => [
         'enabled' => env('IP_INFO_CACHE_ENABLED', true),
@@ -20,15 +16,22 @@ return [
         'ttl' => (int) env('IP_INFO_CACHE_TTL', 86400),
         'negative_ttl' => (int) env('IP_INFO_CACHE_NEGATIVE_TTL', 300),
         'prefix' => env('IP_INFO_CACHE_PREFIX', 'laravel_ip_info'),
+        'tenant_prefix' => env('IP_INFO_TENANT_ID'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lookup behavior
+    |--------------------------------------------------------------------------
+    */
+    'lookup' => [
+        'request_memo' => env('IP_INFO_REQUEST_MEMO', true),
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Providers
     |--------------------------------------------------------------------------
-    |
-    | chain — ordered built-in provider names resolved by the service provider.
-    | custom — additional container-resolvable IpProvider class names.
     */
     'providers' => [
         'default' => 'chain',
@@ -40,14 +43,22 @@ return [
     |--------------------------------------------------------------------------
     | Named presets
     |--------------------------------------------------------------------------
-    |
-    | Applied via ip-info:install --preset= or IP_INFO_PRESET env at install time.
     */
     'presets' => [
         'cloudflare' => [
             'trusted_proxies' => [
                 'respect_laravel' => false,
-                'headers' => ['CF-Connecting-IP', 'X-Forwarded-For'],
+                'headers' => ['CF-Connecting-IP'],
+                'require_trusted_proxy_for_headers' => true,
+                'proxy_cidrs' => [],
+            ],
+        ],
+        'cloudflare_strict' => [
+            'trusted_proxies' => [
+                'respect_laravel' => false,
+                'headers' => ['CF-Connecting-IP'],
+                'require_trusted_proxy_for_headers' => true,
+                'proxy_cidrs' => [],
             ],
         ],
         'nginx_proxy' => [
@@ -69,27 +80,36 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Geo security (middleware helpers)
+    |--------------------------------------------------------------------------
+    */
+    'security' => [
+        'blocked_countries' => array_filter(explode(',', (string) env('IP_INFO_BLOCKED_COUNTRIES', ''))),
+        'allowed_countries' => array_filter(explode(',', (string) env('IP_INFO_ALLOWED_COUNTRIES', ''))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | CleanTalk HTTP provider
     |--------------------------------------------------------------------------
-    |
-    | Disabled by default. URL host must remain api.cleantalk.org (SSRF guard).
-    |
-    | Env: IP_INFO_CLEANTALK_ENABLED, IP_INFO_CLEANTALK_TIMEOUT
     */
     'cleantalk' => [
         'enabled' => env('IP_INFO_CLEANTALK_ENABLED', false),
         'timeout' => (int) env('IP_INFO_CLEANTALK_TIMEOUT', 3),
         'url' => 'https://api.cleantalk.org/?method_name=ip_info&ip=%s',
+        'retries' => (int) env('IP_INFO_CLEANTALK_RETRIES', 1),
+        'soft_fail_statuses' => [429, 500, 502, 503, 504],
+        'circuit_breaker' => [
+            'enabled' => env('IP_INFO_CLEANTALK_CIRCUIT_BREAKER', true),
+            'failure_threshold' => (int) env('IP_INFO_CLEANTALK_CIRCUIT_THRESHOLD', 5),
+            'ttl' => (int) env('IP_INFO_CLEANTALK_CIRCUIT_TTL', 60),
+        ],
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Offline IPv4 database
     |--------------------------------------------------------------------------
-    |
-    | Requires migration + ip-info:install-database when enabled.
-    |
-    | Env: IP_INFO_DATABASE_ENABLED, IP_INFO_DATABASE_STALE_DAYS
     */
     'database' => [
         'enabled' => env('IP_INFO_DATABASE_ENABLED', false),
@@ -100,29 +120,31 @@ return [
     |--------------------------------------------------------------------------
     | MaxMind GeoLite2
     |--------------------------------------------------------------------------
-    |
-    | Requires maxmind-db/reader and ip-info:update-maxmind when enabled.
-    |
-    | Env: IP_INFO_MAXMIND_ENABLED, IP_INFO_MAXMIND_LICENSE_KEY,
-    |      IP_INFO_MAXMIND_DATABASE_PATH
     */
     'maxmind' => [
         'enabled' => env('IP_INFO_MAXMIND_ENABLED', false),
         'license_key' => env('IP_INFO_MAXMIND_LICENSE_KEY'),
         'database_path' => env('IP_INFO_MAXMIND_DATABASE_PATH', storage_path('app/geoip/GeoLite2-Country.mmdb')),
+        'stale_days' => (int) env('IP_INFO_MAXMIND_STALE_DAYS', 30),
     ],
 
     /*
     |--------------------------------------------------------------------------
     | HTTP geo providers
     |--------------------------------------------------------------------------
-    |
-    | Env: IP_INFO_HTTP_ENABLED, IP_INFO_HTTP_DRIVER, IP_INFO_HTTP_TIMEOUT
     */
     'http' => [
         'enabled' => env('IP_INFO_HTTP_ENABLED', false),
-        'driver' => env('IP_INFO_HTTP_DRIVER', 'ip-api'),
+        'driver' => env('IP_INFO_HTTP_DRIVER', 'ipinfo'),
+        'allow_insecure' => env('IP_INFO_HTTP_ALLOW_INSECURE', false),
         'timeout' => (int) env('IP_INFO_HTTP_TIMEOUT', 3),
+        'retries' => (int) env('IP_INFO_HTTP_RETRIES', 1),
+        'soft_fail_statuses' => [429, 500, 502, 503, 504],
+        'circuit_breaker' => [
+            'enabled' => env('IP_INFO_HTTP_CIRCUIT_BREAKER', true),
+            'failure_threshold' => (int) env('IP_INFO_HTTP_CIRCUIT_THRESHOLD', 5),
+            'ttl' => (int) env('IP_INFO_HTTP_CIRCUIT_TTL', 60),
+        ],
         'drivers' => [
             'ip-api' => [
                 'url' => 'http://ip-api.com/json/%s?fields=status,country,countryCode',
@@ -139,59 +161,42 @@ return [
     |--------------------------------------------------------------------------
     | Privacy helpers
     |--------------------------------------------------------------------------
-    |
-    | Env: IP_INFO_PRIVACY_LOG_LOOKUPS
     */
     'privacy' => [
         'log_lookups' => env('IP_INFO_PRIVACY_LOG_LOOKUPS', true),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Laravel Pulse recorder
-    |--------------------------------------------------------------------------
-    |
-    | Env: IP_INFO_PULSE_ENABLED
-    */
-    'pulse' => [
-        'enabled' => env('IP_INFO_PULSE_ENABLED', true),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Optional HTTP route
-    |--------------------------------------------------------------------------
-    |
-    | Bundled JSON endpoint; disabled by default.
-    |
-    | Env: IP_INFO_ROUTES_ENABLED, IP_INFO_ROUTE_PATH
-    */
-    'routes' => [
-        'enabled' => env('IP_INFO_ROUTES_ENABLED', false),
-        'path' => env('IP_INFO_ROUTE_PATH', '/ip-info'),
+        'skip_private_ips' => env('IP_INFO_PRIVACY_SKIP_PRIVATE', true),
+        'redact_headers' => env('IP_INFO_PRIVACY_REDACT_HEADERS', false),
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Trusted proxies / client IP headers
     |--------------------------------------------------------------------------
-    |
-    | respect_laravel — use Laravel $request->ip() when no trusted header matches.
-    | headers — only honor these request headers when explicitly configured.
-    |
-    | Env: IP_INFO_RESPECT_LARAVEL_PROXIES
     */
     'trusted_proxies' => [
         'respect_laravel' => env('IP_INFO_RESPECT_LARAVEL_PROXIES', true),
+        'sync_with_laravel' => env('IP_INFO_SYNC_TRUSTED_PROXIES', false),
         'headers' => [],
+        'proxy_cidrs' => array_filter(explode(',', (string) env('IP_INFO_TRUSTED_PROXY_CIDRS', ''))),
+        'require_trusted_proxy_for_headers' => env('IP_INFO_REQUIRE_TRUSTED_PROXY', true),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Install defaults
-    |--------------------------------------------------------------------------
-    |
-    | Env: IP_INFO_PRESET
-    */
+    'pulse' => [
+        'enabled' => env('IP_INFO_PULSE_ENABLED', true),
+    ],
+
+    'telescope' => [
+        'enabled' => env('IP_INFO_TELESCOPE_ENABLED', true),
+    ],
+
+    'routes' => [
+        'enabled' => env('IP_INFO_ROUTES_ENABLED', false),
+        'path' => env('IP_INFO_ROUTE_PATH', '/ip-info'),
+        'middleware' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('IP_INFO_ROUTE_MIDDLEWARE', ''))
+        ))),
+    ],
+
     'install_preset' => env('IP_INFO_PRESET'),
 ];

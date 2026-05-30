@@ -108,6 +108,99 @@ PSR-4 path: `src/Laravel/Database/Seeders/IpCountrySeeder.php`.
 | HTTP drivers | `IP_INFO_HTTP_ENABLED=true`, `IP_INFO_HTTP_DRIVER=ip-api` |
 | Batch lookup | `IpInfo::forMany(['8.8.8.8', '1.1.1.1'])` |
 
+## Upgrading to 3.2
+
+No breaking changes. New optional config keys:
+
+| Key | Default | Purpose |
+|-----|---------|---------|
+| `http.retries` | `1` | Idempotent GET retry count |
+| `http.circuit_breaker.enabled` | `false` | Open circuit after HTTP failures |
+| `http.circuit_breaker.failure_threshold` | `5` | Failures before circuit opens |
+| `http.circuit_breaker.ttl` | `60` | Seconds circuit stays open |
+
+HTTP providers soft-fail on 429/5xx (chain continues). Run `ip-info:publish-schedule` for weekly DB update stubs.
+
+`ip-info:diagnose --json` adds `maxmind.stale`, `maxmind.readable`, `http.circuit_open`.
+
+## Upgrading to 3.3
+
+Opt-in security artifacts — publish middleware or import rules directly:
+
+```bash
+php artisan vendor:publish --tag=ip-info-middleware
+```
+
+| Feature | Usage |
+|---------|-------|
+| `ClientIpPublic` rule | Reject private/reserved IPs in forms |
+| `CountryIn` rule | Geo-gate validated fields |
+| `BlockCountries` / `AllowCountries` | Route middleware |
+| `cloudflare_strict` preset | CF-Connecting-IP only (anti-spoof) |
+| `privacy.skip_private_ips` | Skip events for private IPs |
+| `cache.tenant_prefix` | Multi-tenant cache isolation |
+
+Set `trusted_proxies.sync_with_laravel=true` and mirror values in Laravel `TrustProxies` middleware.
+
+## Upgrading to 3.4
+
+| Feature | Usage |
+|---------|-------|
+| `IpInfo::fakeSequence()` | Queue responses for rate-limit tests |
+| `IpInfo::assertLookedUp('8.8.8.8')` | Assert fake was called |
+| `IpInfo::withCachePrefix('tenant-1')` | Runtime cache namespace |
+| `lookup.request_memo` | In-request dedup (default `true`) |
+| `ip-info:about` | Capability matrix |
+| `make:ip-info-test` | Scaffold feature test with fake |
+| Pest helper | `vendor:publish --tag=ip-info-pest` |
+
+Result helpers: `forLogging()`, `toMinimalArray()`, `isEu()`, `isInContinent()`, `countryNameOrCode()`.
+
+## Upgrading to 4.0
+
+| Feature | Usage |
+|---------|-------|
+| `IpInfo::forManyQueued($ips)` | Dispatch `ProcessIpLookups` job |
+| `IpLookupsBatchCompleted` | Event after queued batch |
+| Telescope | Optional `IpInfoTelescopeRecorder` (requires `laravel/telescope`) |
+| Pulse card | Livewire `IpInfoCard` when Pulse + Livewire installed |
+
+Satellite packages (ASN, fraud, Pulse UI) — see [satellite-packages.md](satellite-packages.md).
+
+## Refactoring notes (post v4.0)
+
+| Change | Action required |
+|--------|-----------------|
+| Trusted headers | Set `IP_INFO_TRUSTED_PROXY_CIDRS` or disable `IP_INFO_REQUIRE_TRUSTED_PROXY=false` |
+| HTTP `ip-api` driver | Set `IP_INFO_HTTP_ALLOW_INSECURE=true` or switch to `ipinfo` |
+| `ProviderResult::$resolved` | Prefer `$result->status` / `isHit()` / `shouldStopChain()` |
+| `IpInfoResult::shouldLog()` | Inject `IpPrivacyPolicy` |
+| Fake in tests | No manual cache flush needed — fake bypasses cache |
+
+## Application sync (4.1+)
+
+```bash
+php artisan ip-info:sync
+php artisan ip-info:sync --json
+php artisan ip-info:sync --fix
+```
+
+| Flag | Behavior |
+|------|----------|
+| `--fix` | Publish missing stubs + migrate (safe only) |
+| `--publish-config` / `--publish-middleware` | Targeted publish |
+| `--force` | Overwrite **outdated** stubs only (never modified files) |
+| `--check-routes` | Routes health section only |
+
+Route protection when enabling the endpoint:
+
+```env
+IP_INFO_ROUTES_ENABLED=true
+IP_INFO_ROUTE_MIDDLEWARE=throttle:60,1
+```
+
+Preset recommendations from sync are **report-only** — persist `.env` / `config/ip-info.php` manually.
+
 ## Verification checklist
 
 ```bash

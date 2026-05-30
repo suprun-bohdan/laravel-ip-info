@@ -6,12 +6,15 @@ namespace SuprunBohdan\IpInfo\Laravel;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
+use SuprunBohdan\IpInfo\Contracts\BatchIpProvider;
 use SuprunBohdan\IpInfo\Contracts\IpCache;
 use SuprunBohdan\IpInfo\Contracts\IpLookupContract;
-use SuprunBohdan\IpInfo\Contracts\IpProvider;
+use SuprunBohdan\IpInfo\Contracts\IpProviderResolver;
 use SuprunBohdan\IpInfo\Data\GeoLocation;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\IpInfoResult;
+use SuprunBohdan\IpInfo\Data\ProviderResult;
+use SuprunBohdan\IpInfo\Jobs\ProcessIpLookups;
 use SuprunBohdan\IpInfo\Laravel\Events\IpLookupCompleted;
 use SuprunBohdan\IpInfo\Laravel\Events\IpLookupFailed;
 use SuprunBohdan\IpInfo\Laravel\Events\IpLookupStarted;
@@ -24,12 +27,20 @@ use Throwable;
 
 final class IpInfoManager implements IpLookupContract
 {
+    /** @var array<string, IpInfoResult> */
+    private array $requestMemo = [];
+
+    private ?FakeIpProvider $lastFake = null;
+
+    private bool $fakeMode = false;
+
     public function __construct(
         private StringIpResolver $stringResolver,
         private RequestIpResolver $requestResolver,
         private IpValidator $validator,
         private IpCache $cache,
         private Dispatcher $events,
+        private IpProviderResolver $providerResolver,
     ) {}
 
     /**
@@ -38,9 +49,36 @@ final class IpInfoManager implements IpLookupContract
     public function fake(array $map = []): FakeIpProvider
     {
         $fake = new FakeIpProvider($map);
-        app()->instance(IpProvider::class, new ChainProvider([$fake]));
+        $this->enableFakeProvider($fake);
 
         return $fake;
+    }
+
+    /**
+     * @param  list<string|null>  $sequence
+     */
+    public function fakeSequence(array $sequence): FakeIpProvider
+    {
+        $fake = new FakeIpProvider([], $sequence);
+        $this->enableFakeProvider($fake);
+
+        return $fake;
+    }
+
+    public function assertLookedUp(string $ip): void
+    {
+        if ($this->lastFake === null) {
+            throw new \RuntimeException('Call IpInfo::fake() or fakeSequence() before assertLookedUp().');
+        }
+
+        $this->lastFake->assertLookedUp($ip);
+    }
+
+    public function withCachePrefix(string $prefix): self
+    {
+        app()->instance('ip-info.runtime_cache_prefix', $prefix);
+
+        return $this;
     }
 
     public function for(string $ip): IpInfoQuery
@@ -60,60 +98,90 @@ final class IpInfoManager implements IpLookupContract
     public function forMany(array $ips): array
     {
         $results = [];
+        $misses = [];
 
         foreach ($ips as $ip) {
-            $results[$ip] = $this->for($ip)->result();
+            $address = $this->stringResolver->resolve($ip);
+
+            if ($this->shouldUseRequestMemo() && isset($this->requestMemo[$address->value])) {
+                $results[$ip] = $this->requestMemo[$address->value];
+
+                continue;
+            }
+
+            $cached = $this->resolveFromCache($address);
+
+            if ($cached !== null) {
+                $results[$ip] = $cached;
+                $this->rememberRequestMemo($address, $cached);
+
+                continue;
+            }
+
+            $misses[$ip] = $address;
+        }
+
+        if ($misses !== [] && ! $this->fakeMode) {
+            $provider = $this->providerResolver->provider();
+
+            if ($provider instanceof BatchIpProvider) {
+                $batchResults = $provider->lookupMany(array_values($misses));
+
+                foreach ($misses as $ip => $address) {
+                    $providerResult = $batchResults[$address->value]
+                        ?? ProviderResult::skipped('chain');
+
+                    if ($providerResult->isHit()) {
+                        $result = $this->finalizeProviderResult($address, $providerResult);
+                        $results[$ip] = $result;
+                        unset($misses[$ip]);
+                    }
+                }
+            }
+        }
+
+        foreach ($misses as $ip => $address) {
+            $results[$ip] = $this->lookup($address);
         }
 
         return $results;
     }
 
+    /**
+     * @param  list<string>  $ips
+     */
+    public function forManyQueued(array $ips): void
+    {
+        ProcessIpLookups::dispatch($ips);
+    }
+
     public function lookup(IpAddress $address): IpInfoResult
     {
+        $cached = $this->resolveFromCache($address);
+
+        if ($cached !== null) {
+            $this->rememberRequestMemo($address, $cached);
+
+            if ($this->shouldDispatchEvents($address)) {
+                $this->events->dispatch(new IpLookupStarted($address));
+                $this->events->dispatch(new IpLookupCompleted($address, $cached));
+            }
+
+            return $cached;
+        }
+
+        if ($this->shouldUseRequestMemo() && isset($this->requestMemo[$address->value])) {
+            return $this->requestMemo[$address->value];
+        }
+
+        if (! $this->shouldDispatchEvents($address)) {
+            return $this->performLookup($address);
+        }
+
         $this->events->dispatch(new IpLookupStarted($address));
 
         try {
-            $isPrivate = $this->isPrivate($address);
-            $isPublic = $this->isPublic($address);
-
-            if (config('ip-info.cache.enabled', true) && $isPublic) {
-                if ($this->cache->hasNegative($address)) {
-                    $result = $this->makeResult($address, null, $isPublic, $isPrivate, 'cache:negative');
-                    $this->events->dispatch(new IpLookupCompleted($address, $result));
-
-                    return $result;
-                }
-
-                $cached = $this->cache->get($address);
-
-                if ($cached !== null) {
-                    $result = $this->makeResult($address, $cached, $isPublic, $isPrivate, 'cache');
-                    $this->events->dispatch(new IpLookupCompleted($address, $result));
-
-                    return $result;
-                }
-            }
-
-            $providerResult = app(IpProvider::class)->lookup($address);
-            $geo = $providerResult->geoLocation();
-            $countryCode = $geo->countryCode;
-
-            if (config('ip-info.cache.enabled', true) && $isPublic) {
-                if ($countryCode !== null) {
-                    $this->cache->put($address, $countryCode);
-                } elseif ($providerResult->resolved) {
-                    $this->cache->putNegative($address);
-                }
-            }
-
-            $result = new IpInfoResult(
-                $address->value,
-                $geo,
-                $isPublic,
-                $isPrivate,
-                $providerResult->provider,
-            );
-
+            $result = $this->performLookup($address);
             $this->events->dispatch(new IpLookupCompleted($address, $result));
 
             return $result;
@@ -132,6 +200,99 @@ final class IpInfoManager implements IpLookupContract
     public function isPrivate(IpAddress $address): bool
     {
         return $this->validator->shouldSkipExternalLookup($address->value);
+    }
+
+    public function isFakeMode(): bool
+    {
+        return $this->fakeMode;
+    }
+
+    private function enableFakeProvider(FakeIpProvider $fake): void
+    {
+        $this->providerResolver->replace(new ChainProvider([$fake]));
+        $this->fakeMode = true;
+        $this->lastFake = $fake;
+    }
+
+    private function performLookup(IpAddress $address): IpInfoResult
+    {
+        $providerResult = $this->providerResolver->provider()->lookup($address);
+
+        $result = $this->finalizeProviderResult($address, $providerResult);
+        $this->rememberRequestMemo($address, $result);
+
+        return $result;
+    }
+
+    private function finalizeProviderResult(IpAddress $address, ProviderResult $providerResult): IpInfoResult
+    {
+        $isPrivate = $this->isPrivate($address);
+        $isPublic = $this->isPublic($address);
+        $geo = $providerResult->geoLocation();
+        $countryCode = $geo->countryCode;
+
+        if (! $this->fakeMode && config('ip-info.cache.enabled', true) && $isPublic) {
+            if ($countryCode !== null) {
+                $this->cache->put($address, $countryCode);
+            } elseif ($providerResult->shouldStopChain() && ! $providerResult->isHit()) {
+                $this->cache->putNegative($address);
+            }
+        }
+
+        return new IpInfoResult(
+            $address->value,
+            $geo,
+            $isPublic,
+            $isPrivate,
+            $providerResult->provider,
+        );
+    }
+
+    private function resolveFromCache(IpAddress $address): ?IpInfoResult
+    {
+        if ($this->fakeMode) {
+            return null;
+        }
+
+        $isPrivate = $this->isPrivate($address);
+        $isPublic = $this->isPublic($address);
+
+        if (! config('ip-info.cache.enabled', true) || ! $isPublic) {
+            return null;
+        }
+
+        if ($this->cache->hasNegative($address)) {
+            return $this->makeResult($address, null, $isPublic, $isPrivate, 'cache:negative');
+        }
+
+        $cached = $this->cache->get($address);
+
+        if ($cached === null) {
+            return null;
+        }
+
+        return $this->makeResult($address, $cached, $isPublic, $isPrivate, 'cache');
+    }
+
+    private function shouldUseRequestMemo(): bool
+    {
+        return (bool) config('ip-info.lookup.request_memo', true);
+    }
+
+    private function shouldDispatchEvents(IpAddress $address): bool
+    {
+        if ($this->isPrivate($address) && config('ip-info.privacy.skip_private_ips', true)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function rememberRequestMemo(IpAddress $address, IpInfoResult $result): void
+    {
+        if ($this->shouldUseRequestMemo()) {
+            $this->requestMemo[$address->value] = $result;
+        }
     }
 
     private function makeResult(

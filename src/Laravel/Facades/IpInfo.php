@@ -12,7 +12,11 @@ use SuprunBohdan\IpInfo\Testing\FakeIpProvider;
  * @method static \SuprunBohdan\IpInfo\Laravel\IpInfoQuery for(string $ip)
  * @method static \SuprunBohdan\IpInfo\Laravel\IpInfoQuery forRequest(\Illuminate\Http\Request $request)
  * @method static array<string, \SuprunBohdan\IpInfo\Data\IpInfoResult> forMany(list<string> $ips)
+ * @method static void forManyQueued(list<string> $ips)
  * @method static FakeIpProvider fake(array<string, string|null> $map = [])
+ * @method static FakeIpProvider fakeSequence(list<string|null> $sequence)
+ * @method static void assertLookedUp(string $ip)
+ * @method static \SuprunBohdan\IpInfo\Laravel\IpInfoManager withCachePrefix(string $prefix)
  *
  * @see IpInfoManager
  */

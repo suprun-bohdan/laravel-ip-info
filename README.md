@@ -46,8 +46,46 @@ Middleware (Cloudflare preset):
 
 ```bash
 php artisan vendor:publish --tag=ip-info-middleware
+# Configure trusted proxy CIDRs, e.g. IP_INFO_TRUSTED_PROXY_CIDRS=173.245.48.0/20,...
 # .env: IP_INFO_PRESET=cloudflare
 ```
+
+## Security model (client IP)
+
+- **Never trust `X-Forwarded-For` blindly.** Headers are read only when the remote address matches `trusted_proxies.proxy_cidrs`, unless `require_trusted_proxy_for_headers=false`.
+- **Mirror Laravel `TrustProxies`** when using `respect_laravel=true` (default). Set `trusted_proxies.sync_with_laravel` as a reminder to keep both in sync.
+- **Cloudflare presets** require `IP_INFO_TRUSTED_PROXY_CIDRS` (Cloudflare egress ranges) or network-level restriction. Presets do not embed rotating Cloudflare CIDRs.
+- **HTTP providers** use HTTPS by default. Insecure `http://` URLs require `IP_INFO_HTTP_ALLOW_INSECURE=true`.
+
+## Testing / fake behavior
+
+`IpInfo::fake()` and `fakeSequence()`:
+
+- Replace the provider chain for the current manager instance.
+- **Bypass positive and negative cache** — tests stay deterministic even when cache is populated.
+- Do **not** write lookup results to production cache while fake mode is active.
+
+```php
+IpInfo::fake(['8.8.8.8' => 'UA']); // overrides cached US for 8.8.8.8
+IpInfo::assertLookedUp('8.8.8.8');
+```
+
+## Batch lookup
+
+`IpInfo::forMany()` resolves cache hits first, then uses `BatchIpProvider::lookupMany()` on the chain when available (offline DB uses a single bounded SQL query). Remaining misses fall back to per-IP chain lookup.
+
+## Architecture
+
+| Layer | Role |
+|-------|------|
+| `IpInfoManager` | Orchestration, cache, events, fake mode |
+| `IpProviderResolver` | Injectable provider access (no service locator) |
+| `ChainProvider` | Ordered providers; stops on `Hit`/`Miss` |
+| `ProviderStatus` | Explicit `skipped` / `failed` / `miss` / `hit` |
+| `IpCache` | Positive + negative TTL cache |
+| Custom providers | `providers.custom` or `IpInfoBuildingChain` event |
+
+Privacy/logging policy lives in `IpPrivacyPolicy` — DTOs do not read Laravel config.
 
 ## What this package does
 
@@ -108,6 +146,26 @@ php artisan ip-info:diagnose
 php artisan ip-info:diagnose 8.8.8.8 --json
 ```
 
+## Application sync
+
+Audit how the package is integrated into your Laravel app:
+
+```bash
+php artisan ip-info:sync
+php artisan ip-info:sync --json
+php artisan ip-info:sync --fix
+php artisan ip-info:sync --publish-config --publish-middleware
+```
+
+`--fix` only performs **safe** actions: publish missing config/middleware stubs and run migrations. It does **not** edit `bootstrap/app.php`, `Kernel.php`, or `.env`. Preset recommendations are report-only.
+
+When routes are enabled, configure protection:
+
+```env
+IP_INFO_ROUTES_ENABLED=true
+IP_INFO_ROUTE_MIDDLEWARE=throttle:60,1
+```
+
 ## Configuration
 
 File: `config/ip-info.php`
@@ -118,8 +176,10 @@ File: `config/ip-info.php`
 | `providers.chain` | Provider order: `local`, `database`, `maxmind`, `http`, `cleantalk` |
 | `presets` | Named proxy/provider presets (`cloudflare`, `nginx_proxy`, `local_only`) |
 | `maxmind` | GeoLite2 MMDB path and license key |
-| `http` | HTTP driver selection and timeouts |
-| `privacy` | Logging and anonymization helpers |
+| `http` | HTTP driver selection, HTTPS enforcement, timeouts |
+| `trusted_proxies` | Header allowlist, proxy CIDRs, Laravel fallback |
+| `routes` | Opt-in endpoint path and route middleware |
+| `privacy` | Logging policy via `IpPrivacyPolicy` |
 
 See [docs/migration-guide.md](docs/migration-guide.md) and [docs/roadmap-v3.md](docs/roadmap-v3.md).
 
@@ -131,7 +191,9 @@ See [docs/migration-guide.md](docs/migration-guide.md) and [docs/roadmap-v3.md](
 | `ip-info:install-database` | Download IPv4 CSV and seed offline DB |
 | `ip-info:update-database` | Refresh offline CSV database |
 | `ip-info:update-maxmind` | Download GeoLite2-Country MMDB |
-| `ip-info:diagnose` | Configuration and lookup diagnostics |
+| `ip-info:sync` | Audit config/middleware/routes/security integration |
+| `ip-info:sync --fix` | Safe publish/migrate only |
+| `ip-info:diagnose` | Provider/runtime health + optional IP lookup |
 | `ip-info:starter` | Publish starter middleware/config bundle |
 
 ## Development

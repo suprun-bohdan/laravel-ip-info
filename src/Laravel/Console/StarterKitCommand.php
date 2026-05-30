@@ -23,9 +23,8 @@ final class StarterKitCommand extends Command
         ]);
 
         $this->newLine();
-        $this->line('Add to bootstrap/app.php or app/Http/Kernel.php:');
-        $this->line('  \\SuprunBohdan\\IpInfo\\Laravel\\Http\\Middleware\\ResolveClientIp::class');
-        $this->newLine();
+        $this->call('ip-info:sync');
+
         $this->info('Starter kit published.');
 
         return self::SUCCESS;

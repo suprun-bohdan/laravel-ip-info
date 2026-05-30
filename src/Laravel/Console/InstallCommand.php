@@ -44,6 +44,7 @@ final class InstallCommand extends Command
         }
 
         $this->info('Laravel IP Info installed.');
+        $this->line('Run php artisan ip-info:sync --json to audit application integration.');
 
         return self::SUCCESS;
     }

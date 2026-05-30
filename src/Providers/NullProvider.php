@@ -12,6 +12,6 @@ final class NullProvider implements IpProvider
 {
     public function lookup(IpAddress $ip): ProviderResult
     {
-        return new ProviderResult(null, 'null', false);
+        return ProviderResult::skipped('null');
     }
 }

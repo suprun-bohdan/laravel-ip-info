@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use SuprunBohdan\IpInfo\Contracts\IpResolver;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Exceptions\InvalidIpAddressException;
+use SuprunBohdan\IpInfo\Support\CidrMatcher;
 use SuprunBohdan\IpInfo\Support\IpNormalizer;
 use SuprunBohdan\IpInfo\Support\IpValidator;
 
@@ -24,19 +25,27 @@ final class RequestIpResolver implements IpResolver
             throw new InvalidIpAddressException('Expected Illuminate\Http\Request.');
         }
 
-        $trustedHeaders = config('ip-info.trusted_proxies.headers', []);
+        if ($this->shouldReadTrustedHeaders($source)) {
+            $trustedHeaders = config('ip-info.trusted_proxies.headers', []);
 
-        foreach ($trustedHeaders as $header) {
-            $value = $source->header($header);
+            if (is_array($trustedHeaders)) {
+                foreach ($trustedHeaders as $header) {
+                    if (! is_string($header) || $header === '') {
+                        continue;
+                    }
 
-            if (! is_string($value) || $value === '') {
-                continue;
-            }
+                    $value = $source->header($header);
 
-            $candidate = $this->normalizer->normalize($this->firstAddress($value));
+                    if (! is_string($value) || $value === '') {
+                        continue;
+                    }
 
-            if ($this->validator->isValid($candidate)) {
-                return new IpAddress($candidate);
+                    $candidate = $this->normalizer->normalize($this->firstAddress($value));
+
+                    if ($this->validator->isValid($candidate)) {
+                        return new IpAddress($candidate);
+                    }
+                }
             }
         }
 
@@ -49,6 +58,29 @@ final class RequestIpResolver implements IpResolver
         }
 
         throw new InvalidIpAddressException('Unable to resolve client IP address.');
+    }
+
+    private function shouldReadTrustedHeaders(Request $request): bool
+    {
+        $requireTrustedProxy = (bool) config('ip-info.trusted_proxies.require_trusted_proxy_for_headers', true);
+
+        if (! $requireTrustedProxy) {
+            return true;
+        }
+
+        $remote = $request->server('REMOTE_ADDR');
+
+        if (! is_string($remote) || $remote === '') {
+            return false;
+        }
+
+        $cidrs = config('ip-info.trusted_proxies.proxy_cidrs', []);
+
+        if (! is_array($cidrs) || $cidrs === []) {
+            return false;
+        }
+
+        return CidrMatcher::matchesAny($remote, $cidrs);
     }
 
     private function firstAddress(string $value): string

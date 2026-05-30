@@ -1,30 +1,47 @@
 # Satellite packages plan
 
-Core `suprun-bohdan/laravel-ip-info` intentionally stays minimal: country discovery, request IP resolution, caching, and provider chains.
+Core `suprun-bohdan/laravel-ip-info` intentionally stays minimal. Advanced capabilities live in separate repositories.
 
-Advanced capabilities belong in **separate repositories** that depend on this package.
+## Planned satellites
 
-## Planned satellites (not in core)
-
-| Package | Purpose | Depends on |
-|---------|---------|------------|
-| `laravel-ip-info-fraud` | VPN/proxy/TOR risk scoring hooks | core + external APIs |
-| `laravel-ip-info-asn` | ASN lookup via RIPE/Team Cymru | core |
-| `laravel-ip-info-pulse-ui` | Rich Pulse dashboard cards | core + laravel/pulse |
-
-## Non-goals for core (v3.0+)
-
-- Machine learning risk models
-- Full geocoder (city lat/long as primary API)
-- 10+ bundled HTTP providers
-- VPN detection in core chain
+| Package | Purpose | MVP scope |
+|---------|---------|-----------|
+| `laravel-ip-info-asn` | ASN lookup | Team Cymru DNS + optional MaxMind ASN MMDB |
+| `laravel-ip-info-fraud` | VPN/proxy/TOR signals | HTTP driver flags from ip-api/ipinfo only |
+| `laravel-ip-info-pulse-ui` | Rich Pulse dashboard | Extends core `IpInfoCard` with country charts |
 
 ## Integration pattern
 
-Satellite packages should:
+1. Listen to `IpLookupCompleted` / `IpLookupsBatchCompleted`.
+2. Register providers via `IpInfoBuildingChain` event.
+3. Publish own config; never patch core chain defaults.
 
-1. Listen to `IpLookupCompleted` events from core.
-2. Register custom `IpProvider` implementations via `IpInfoBuildingChain`.
-3. Publish their own config and migrations.
+## laravel-ip-info-asn (MVP)
 
-This keeps core stable while the ecosystem grows.
+```php
+// Registers AsnProvider via IpInfoBuildingChain
+final class AsnProvider implements IpProvider
+{
+    public function lookup(IpAddress $ip): ProviderResult
+    {
+        // Team Cymru: origin.asn.cymru.com TXT lookup or MMDB-ASN
+    }
+}
+```
+
+## laravel-ip-info-fraud (MVP)
+
+```php
+// Listens to IpLookupCompleted, adds risk score attribute — not in core chain
+final class FraudScoreListener
+{
+    public function handle(IpLookupCompleted $event): void
+    {
+        // Optional HTTP enrichment; store in separate cache key
+    }
+}
+```
+
+## Non-goals for core
+
+- ML risk models, full geocoder, VPN in default chain, 10+ HTTP providers.

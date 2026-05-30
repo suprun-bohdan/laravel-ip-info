@@ -7,7 +7,15 @@ parameters:
         - src
     excludePaths:
         - src/config
+        - src/Laravel/Pulse/Livewire/IpInfoCard.php
+        - src/Laravel/Telescope/IpInfoTelescopeRecorder.php
     ignoreErrors:
         -
             message: '#Trait SuprunBohdan\\IpInfo\\Testing\\InteractsWithIpInfo is used zero times#'
             path: src/Testing/InteractsWithIpInfo.php
+        -
+            message: '#.*#'
+            path: src/Laravel/Pulse/Livewire/IpInfoCard.php
+        -
+            message: '#.*#'
+            path: src/Laravel/Telescope/IpInfoTelescopeRecorder.php

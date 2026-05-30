@@ -6,6 +6,11 @@ namespace SuprunBohdan\IpInfo\Laravel\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $first_ip
+ * @property int $last_ip
+ * @property string $country
+ */
 final class IpCountry extends Model
 {
     protected $table = 'ip_country';

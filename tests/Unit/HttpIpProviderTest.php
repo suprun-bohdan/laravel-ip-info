@@ -13,7 +13,7 @@ use SuprunBohdan\IpInfo\Tests\TestCase;
 
 final class HttpIpProviderTest extends TestCase
 {
-    public function test_ip_api_driver_returns_country(): void
+    public function test_ip_api_driver_returns_country_when_insecure_allowed(): void
     {
         Http::fake([
             '*' => Http::response([
@@ -26,13 +26,29 @@ final class HttpIpProviderTest extends TestCase
         config([
             'ip-info.http.enabled' => true,
             'ip-info.http.driver' => 'ip-api',
+            'ip-info.http.allow_insecure' => true,
         ]);
 
         $provider = $this->app->make(HttpIpProvider::class);
         $result = $provider->lookup(new IpAddress('8.8.8.8'));
 
-        $this->assertTrue($result->resolved);
+        $this->assertTrue($result->isHit());
         $this->assertSame('US', $result->countryCode);
+    }
+
+    public function test_ip_api_driver_is_rejected_without_insecure_opt_in(): void
+    {
+        config([
+            'ip-info.http.enabled' => true,
+            'ip-info.http.driver' => 'ip-api',
+            'ip-info.http.allow_insecure' => false,
+        ]);
+
+        $provider = $this->app->make(HttpIpProvider::class);
+
+        $this->expectException(ProviderException::class);
+
+        $provider->lookup(new IpAddress('8.8.8.8'));
     }
 
     public function test_url_allowlist_guard_rejects_unknown_host(): void

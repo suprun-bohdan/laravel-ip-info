@@ -17,4 +17,27 @@ final readonly class GeoLocation
     {
         return new self($countryCode !== null ? strtoupper($countryCode) : null);
     }
+
+    public function isEu(): bool
+    {
+        return $this->isEu === true;
+    }
+
+    public function isInContinent(string $continent): bool
+    {
+        if ($this->continent === null) {
+            return false;
+        }
+
+        return strtoupper($this->continent) === strtoupper($continent);
+    }
+
+    public function countryNameOrCode(): ?string
+    {
+        if ($this->countryName !== null && $this->countryName !== '') {
+            return $this->countryName;
+        }
+
+        return $this->countryCode;
+    }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SuprunBohdan\IpInfo\Providers;
 
+use SuprunBohdan\IpInfo\Contracts\BatchIpProvider;
 use SuprunBohdan\IpInfo\Contracts\IpProvider;
 use SuprunBohdan\IpInfo\Contracts\SchemaInspector;
 use SuprunBohdan\IpInfo\Data\IpAddress;
@@ -12,7 +13,7 @@ use SuprunBohdan\IpInfo\Laravel\Models\IpCountry;
 use SuprunBohdan\IpInfo\Support\IpRange;
 use SuprunBohdan\IpInfo\Support\IpValidator;
 
-final class DatabaseRangeProvider implements IpProvider
+final class DatabaseRangeProvider implements BatchIpProvider, IpProvider
 {
     private ?bool $tableExists = null;
 
@@ -23,30 +24,9 @@ final class DatabaseRangeProvider implements IpProvider
 
     public function lookup(IpAddress $ip): ProviderResult
     {
-        if (! config('ip-info.database.enabled', false)) {
-            return new ProviderResult(null, 'database', false);
-        }
+        $results = $this->lookupMany([$ip]);
 
-        if (! $this->validator->isIpv4($ip->value)) {
-            return new ProviderResult(null, 'database', false);
-        }
-
-        if (! $this->hasTable()) {
-            return new ProviderResult(null, 'database', false);
-        }
-
-        $ipLong = IpRange::ipv4ToLong($ip->value);
-
-        $result = IpCountry::query()
-            ->where('first_ip', '<=', $ipLong)
-            ->where('last_ip', '>=', $ipLong)
-            ->value('country');
-
-        if (is_string($result) && $result !== '') {
-            return new ProviderResult(strtoupper($result), 'database', true);
-        }
-
-        return new ProviderResult(null, 'database', false);
+        return $results[$ip->value] ?? ProviderResult::skipped('database');
     }
 
     /**
@@ -57,8 +37,53 @@ final class DatabaseRangeProvider implements IpProvider
     {
         $results = [];
 
+        if (! config('ip-info.database.enabled', false) || ! $this->hasTable()) {
+            foreach ($addresses as $address) {
+                $results[$address->value] = ProviderResult::skipped('database');
+            }
+
+            return $results;
+        }
+
+        $longs = [];
+
         foreach ($addresses as $address) {
-            $results[$address->value] = $this->lookup($address);
+            if (! $this->validator->isIpv4($address->value)) {
+                $results[$address->value] = ProviderResult::skipped('database');
+
+                continue;
+            }
+
+            $longs[$address->value] = IpRange::ipv4ToLong($address->value);
+        }
+
+        if ($longs === []) {
+            return $results;
+        }
+
+        $minLong = min($longs);
+        $maxLong = max($longs);
+
+        $rows = IpCountry::query()
+            ->where('first_ip', '<=', $maxLong)
+            ->where('last_ip', '>=', $minLong)
+            ->get(['first_ip', 'last_ip', 'country']);
+
+        foreach ($longs as $ip => $long) {
+            $country = null;
+
+            foreach ($rows as $row) {
+                if ($row->first_ip <= $long && $row->last_ip >= $long) {
+                    $country = $row->country;
+                    break;
+                }
+            }
+
+            if (is_string($country) && $country !== '') {
+                $results[$ip] = ProviderResult::hit(strtoupper($country), 'database');
+            } else {
+                $results[$ip] = ProviderResult::skipped('database');
+            }
         }
 
         return $results;

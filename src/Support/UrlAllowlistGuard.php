@@ -11,12 +11,24 @@ final class UrlAllowlistGuard
     /**
      * @param  list<string>  $allowedHosts
      */
-    public static function assertAllowlisted(string $urlTemplate, array $allowedHosts): void
+    public static function assertAllowlisted(string $urlTemplate, array $allowedHosts, bool $allowInsecure = false): void
     {
         $host = parse_url($urlTemplate, PHP_URL_HOST);
 
         if (! is_string($host) || $host === '') {
             throw new ProviderException('URL template must include a host.');
+        }
+
+        $scheme = parse_url($urlTemplate, PHP_URL_SCHEME);
+
+        if (! is_string($scheme) || $scheme === '') {
+            throw new ProviderException('URL template must include a scheme.');
+        }
+
+        if ($scheme !== 'https' && ! ($allowInsecure && $scheme === 'http')) {
+            throw new ProviderException(
+                'Insecure HTTP URLs are rejected by default. Enable ip-info.http.allow_insecure or use HTTPS.'
+            );
         }
 
         $normalized = strtolower($host);

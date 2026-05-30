@@ -22,9 +22,31 @@ final readonly class IpInfoResult implements JsonSerializable
         return $this->geo->countryCode;
     }
 
+    public function isEu(): bool
+    {
+        return $this->geo->isEu();
+    }
+
+    public function isInContinent(string $continent): bool
+    {
+        return $this->geo->isInContinent($continent);
+    }
+
+    public function countryNameOrCode(): ?string
+    {
+        return $this->geo->countryNameOrCode();
+    }
+
+    /**
+     * @deprecated Use {@see IpPrivacyPolicy::shouldLog()} instead.
+     */
     public function shouldLog(): bool
     {
-        return (bool) config('ip-info.privacy.log_lookups', true);
+        if ($this->isPrivate) {
+            return false;
+        }
+
+        return true;
     }
 
     public function anonymized(): self
@@ -36,6 +58,32 @@ final readonly class IpInfoResult implements JsonSerializable
             $this->isPrivate,
             $this->provider,
         );
+    }
+
+    public function forLogging(): self
+    {
+        $geo = $this->isPrivate
+            ? GeoLocation::fromCountryCode(null)
+            : $this->geo;
+
+        return new self(
+            $this->anonymizeIp($this->ip),
+            $geo,
+            $this->isPublic,
+            $this->isPrivate,
+            $this->provider,
+        );
+    }
+
+    /**
+     * @return array{country: ?string, is_public: bool}
+     */
+    public function toMinimalArray(): array
+    {
+        return [
+            'country' => $this->countryCode(),
+            'is_public' => $this->isPublic,
+        ];
     }
 
     /**

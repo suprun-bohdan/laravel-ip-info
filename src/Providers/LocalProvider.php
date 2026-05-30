@@ -16,9 +16,9 @@ final class LocalProvider implements IpProvider
     public function lookup(IpAddress $ip): ProviderResult
     {
         if ($this->validator->shouldSkipExternalLookup($ip->value)) {
-            return new ProviderResult(null, 'local', true);
+            return ProviderResult::miss('local', 'Private or reserved address.');
         }
 
-        return new ProviderResult(null, 'local', false);
+        return ProviderResult::skipped('local');
     }
 }

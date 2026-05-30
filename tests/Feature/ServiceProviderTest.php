@@ -49,9 +49,13 @@ final class RequestIpResolverTest extends TestCase
         $this->assertSame('203.0.113.10', $ip);
     }
 
-    public function test_it_uses_configured_trusted_header(): void
+    public function test_it_uses_configured_trusted_header_when_proxy_is_trusted(): void
     {
-        config(['ip-info.trusted_proxies.headers' => ['X-Forwarded-For']]);
+        config([
+            'ip-info.trusted_proxies.headers' => ['X-Forwarded-For'],
+            'ip-info.trusted_proxies.proxy_cidrs' => ['203.0.113.0/24'],
+            'ip-info.trusted_proxies.respect_laravel' => false,
+        ]);
 
         $request = Request::create('/', 'GET', server: [
             'REMOTE_ADDR' => '203.0.113.10',
@@ -63,9 +67,13 @@ final class RequestIpResolverTest extends TestCase
         $this->assertSame('8.8.8.8', $ip);
     }
 
-    public function test_it_uses_cf_connecting_ip_when_configured(): void
+    public function test_it_uses_cf_connecting_ip_when_proxy_is_trusted(): void
     {
-        config(['ip-info.trusted_proxies.headers' => ['CF-Connecting-IP']]);
+        config([
+            'ip-info.trusted_proxies.headers' => ['CF-Connecting-IP'],
+            'ip-info.trusted_proxies.proxy_cidrs' => ['203.0.113.0/24'],
+            'ip-info.trusted_proxies.respect_laravel' => false,
+        ]);
 
         $request = Request::create('/', 'GET', server: [
             'REMOTE_ADDR' => '203.0.113.10',
@@ -79,7 +87,11 @@ final class RequestIpResolverTest extends TestCase
 
     public function test_it_normalizes_ipv4_mapped_address_from_trusted_header(): void
     {
-        config(['ip-info.trusted_proxies.headers' => ['X-Forwarded-For']]);
+        config([
+            'ip-info.trusted_proxies.headers' => ['X-Forwarded-For'],
+            'ip-info.trusted_proxies.proxy_cidrs' => ['203.0.113.0/24'],
+            'ip-info.trusted_proxies.respect_laravel' => false,
+        ]);
 
         $request = Request::create('/', 'GET', server: [
             'REMOTE_ADDR' => '203.0.113.10',

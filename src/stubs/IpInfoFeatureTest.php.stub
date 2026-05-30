@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
+use SuprunBohdan\IpInfo\Tests\TestCase;
+
+final class {{ class }} extends TestCase
+{
+    public function test_it_resolves_country_from_fake(): void
+    {
+        IpInfo::fake(['8.8.8.8' => 'US']);
+
+        $this->assertSame('US', IpInfo::for('8.8.8.8')->countryCode());
+        IpInfo::assertLookedUp('8.8.8.8');
+    }
+}

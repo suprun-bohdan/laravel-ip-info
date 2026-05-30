@@ -1,0 +1,14 @@
+<?php
+
+/*
+|--------------------------------------------------------------------------
+| Pest — Laravel IP Info
+|--------------------------------------------------------------------------
+|
+| Published by: php artisan vendor:publish --tag=ip-info-pest
+|
+*/
+
+use SuprunBohdan\IpInfo\Testing\InteractsWithIpInfo;
+
+uses(InteractsWithIpInfo::class)->in('Feature', 'Unit');

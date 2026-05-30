@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-05-30
+
+### Added
+
+- **IP inspection:** `IpPrivacyProfile`, `IpThreatSignals`, `IpPrivacyInspector`, `IpThreatInspector`, `RequestProxyInspector`.
+- Helpers: `normalize_ip()`, `ip_privacy()`, `ip_threats()`, `request_behind_trusted_proxy()`, `whois_lookup()`, `client_ip_intel()`.
+- Query/result: `normalizedIp()`, `privacy()`, `threats()`, `isTor()`, `isProxy()`, `isVpn()`, `isHosting()`, `isAnonymous()`, `whois()`, `intel()`.
+- Request macros: `normalizedClientIp()`, `clientIpPrivacy()`, `clientIpThreats()`, `isTorClient()`, `isProxyClient()`, `isBehindTrustedProxy()`, `clientIpIntel()`.
+- Validation rules: `ClientIpNotTor`, `ClientIpNotProxy`, `ValidNormalizedIp`.
+- Config: `threat_intel.*`, `logging.*`, `filtering.*`, `whois.*`, `http.enrich_threat_signals`.
+- HTTP provider threat enrichment from ip-api (`proxy`, `hosting`) and ipinfo (`privacy.*`).
+- **Live WHOIS:** `WhoisLookupService` (IANA referral → RIR, TCP :43), `WhoisRecord` DTO, `WhoisParser`, `ip-info:whois {ip}`.
+- **Client intel:** `ClientIpIntel`, `ClientIpIntelBuilder`, `ClientIpLogger`.
+- Middleware aliases: `ip.log` (`LogClientIp`), `ip.filter` (`FilterClientIp`).
+- IPv6 integration test coverage (`Ipv6IntegrationTest`, `IpInspectionTest`).
+
+### Changed
+
+- `IpNormalizer` canonicalizes IPv6, strips zone IDs, fixes IPv6 anonymization to /48.
+- `IpInfoResult` includes optional `threats` in `toArray()`; `ProviderResult` may carry `IpThreatSignals`.
+- `IpLookupContract` extended with `normalizedIp()`, `privacyProfile()`, `threatSignals()`.
+- Published stub version bumped to `4.3.0`.
+
+### Removed
+
+- `.cursor/docs/` removed from repository; all `.cursor/` paths gitignored.
+
 ## [4.2.0] - 2026-05-30
 
 ### Added

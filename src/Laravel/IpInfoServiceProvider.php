@@ -39,11 +39,13 @@ use SuprunBohdan\IpInfo\Laravel\Console\StarterKitCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\SyncCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\UpdateDatabaseCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\UpdateMaxMindCommand;
+use SuprunBohdan\IpInfo\Laravel\Console\WhoisLookupCommand;
 use SuprunBohdan\IpInfo\Laravel\Database\LaravelSchemaInspector;
-use SuprunBohdan\IpInfo\Laravel\Events\IpInfoBuildingChain;
+use SuprunBohdan\IpInfo\Laravel\Events\IpLookupCompleted;
 use SuprunBohdan\IpInfo\Laravel\Http\LaravelIpHttpClient;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\AllowCountries;
-use SuprunBohdan\IpInfo\Laravel\Http\Middleware\BlockCountries;
+use SuprunBohdan\IpInfo\Laravel\Http\Middleware\FilterClientIp;
+use SuprunBohdan\IpInfo\Laravel\Http\Middleware\LogClientIp;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\ResolveClientIp;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\ShareClientGeo;
 use SuprunBohdan\IpInfo\Laravel\Pulse\Livewire\IpInfoCard;
@@ -71,7 +73,19 @@ use SuprunBohdan\IpInfo\Providers\NullProvider;
 use SuprunBohdan\IpInfo\Resolvers\RequestIpResolver;
 use SuprunBohdan\IpInfo\Resolvers\StringIpResolver;
 use SuprunBohdan\IpInfo\Support\IpNormalizer;
+use SuprunBohdan\IpInfo\Support\IpPrivacyInspector;
+use SuprunBohdan\IpInfo\Support\IpThreatInspector;
 use SuprunBohdan\IpInfo\Support\IpValidator;
+use SuprunBohdan\IpInfo\Whois\SocketWhoisClient;
+use SuprunBohdan\IpInfo\Whois\WhoisLookupService;
+use SuprunBohdan\IpInfo\Whois\WhoisParser;
+use SuprunBohdan\IpInfo\Contracts\WhoisClient;
+use SuprunBohdan\IpInfo\Intel\ClientIpFilter;
+use SuprunBohdan\IpInfo\Intel\ClientIpIntelBuilder;
+use SuprunBohdan\IpInfo\Laravel\Events\IpInfoBuildingChain;
+use SuprunBohdan\IpInfo\Laravel\Http\Middleware\BlockCountries;
+use SuprunBohdan\IpInfo\Logging\ClientIpLogger;
+use SuprunBohdan\IpInfo\Support\RequestProxyInspector;
 
 final class IpInfoServiceProvider extends ServiceProvider
 {
@@ -81,6 +95,15 @@ final class IpInfoServiceProvider extends ServiceProvider
 
         $this->app->singleton(IpNormalizer::class);
         $this->app->singleton(IpValidator::class);
+        $this->app->singleton(IpPrivacyInspector::class);
+        $this->app->singleton(IpThreatInspector::class);
+        $this->app->singleton(RequestProxyInspector::class);
+        $this->app->singleton(WhoisParser::class);
+        $this->app->singleton(WhoisClient::class, SocketWhoisClient::class);
+        $this->app->singleton(WhoisLookupService::class);
+        $this->app->singleton(ClientIpIntelBuilder::class);
+        $this->app->singleton(ClientIpFilter::class);
+        $this->app->singleton(ClientIpLogger::class);
         $this->app->singleton(StringIpResolver::class);
         $this->app->singleton(RequestIpResolver::class);
         $this->app->singleton(SchemaInspector::class, LaravelSchemaInspector::class);
@@ -159,6 +182,9 @@ final class IpInfoServiceProvider extends ServiceProvider
                 $app->make(StringIpResolver::class),
                 $app->make(RequestIpResolver::class),
                 $app->make(IpValidator::class),
+                $app->make(IpNormalizer::class),
+                $app->make(IpPrivacyInspector::class),
+                $app->make(IpThreatInspector::class),
                 $app->make(IpCache::class),
                 $app->make(Dispatcher::class),
                 $app->make(IpProviderResolver::class),
@@ -170,6 +196,21 @@ final class IpInfoServiceProvider extends ServiceProvider
 
         $this->registerPulseRecorder();
         $this->app->singleton(IpInfoTelescopeRecorder::class);
+        $this->registerClientIpLogging();
+    }
+
+    private function registerClientIpLogging(): void
+    {
+        if (! (bool) config('ip-info.logging.auto_log_on_lookup', false)) {
+            return;
+        }
+
+        $this->app->booted(function (): void {
+            $this->app->make('events')->listen(
+                IpLookupCompleted::class,
+                [ClientIpLogger::class, 'handleLookupCompleted'],
+            );
+        });
     }
 
     public function boot(): void
@@ -212,6 +253,7 @@ final class IpInfoServiceProvider extends ServiceProvider
                 MakeIpInfoTestCommand::class,
                 SyncCommand::class,
                 RefreshCloudflareCidrsCommand::class,
+                WhoisLookupCommand::class,
             ]);
         }
 
@@ -238,6 +280,8 @@ final class IpInfoServiceProvider extends ServiceProvider
         $router->aliasMiddleware('geo.block', BlockCountries::class);
         $router->aliasMiddleware('geo.allow', AllowCountries::class);
         $router->aliasMiddleware('geo.share', ShareClientGeo::class);
+        $router->aliasMiddleware('ip.log', LogClientIp::class);
+        $router->aliasMiddleware('ip.filter', FilterClientIp::class);
     }
 
     private function registerBladeDirectives(): void

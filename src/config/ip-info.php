@@ -1,6 +1,6 @@
 <?php
 
-// @ip-info-stub-version 4.2.0
+// @ip-info-stub-version 4.3.0
 
 declare(strict_types=1);
 
@@ -151,6 +151,7 @@ return [
         'enabled' => env('IP_INFO_HTTP_ENABLED', false),
         'driver' => env('IP_INFO_HTTP_DRIVER', 'ipinfo'),
         'allow_insecure' => env('IP_INFO_HTTP_ALLOW_INSECURE', false),
+        'enrich_threat_signals' => env('IP_INFO_HTTP_ENRICH_THREAT', true),
         'timeout' => (int) env('IP_INFO_HTTP_TIMEOUT', 3),
         'retries' => (int) env('IP_INFO_HTTP_RETRIES', 1),
         'soft_fail_statuses' => [429, 500, 502, 503, 504],
@@ -184,6 +185,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Threat intelligence (Tor / proxy / hosting CIDR lists)
+    |--------------------------------------------------------------------------
+    */
+    'threat_intel' => [
+        'enabled' => env('IP_INFO_THREAT_INTEL_ENABLED', true),
+        'tor_exit_cidrs' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('IP_INFO_TOR_EXIT_CIDRS', ''))
+        ))),
+        'known_proxy_cidrs' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('IP_INFO_KNOWN_PROXY_CIDRS', ''))
+        ))),
+        'hosting_cidrs' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('IP_INFO_HOSTING_CIDRS', ''))
+        ))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Trusted proxies / client IP headers
     |--------------------------------------------------------------------------
     */
@@ -193,6 +215,60 @@ return [
         'headers' => [],
         'proxy_cidrs' => array_filter(explode(',', (string) env('IP_INFO_TRUSTED_PROXY_CIDRS', ''))),
         'require_trusted_proxy_for_headers' => env('IP_INFO_REQUIRE_TRUSTED_PROXY', true),
+    ],
+
+    'filtering' => [
+        'enabled' => env('IP_INFO_FILTERING_ENABLED', false),
+        'block_tor' => env('IP_INFO_FILTER_BLOCK_TOR', false),
+        'block_proxy' => env('IP_INFO_FILTER_BLOCK_PROXY', false),
+        'block_vpn' => env('IP_INFO_FILTER_BLOCK_VPN', false),
+        'block_hosting' => env('IP_INFO_FILTER_BLOCK_HOSTING', false),
+        'blocked_countries' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('IP_INFO_FILTER_BLOCKED_COUNTRIES', ''))
+        ))),
+        'blocked_netnames' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('IP_INFO_FILTER_BLOCKED_NETNAMES', ''))
+        ))),
+        'blocked_organizations' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('IP_INFO_FILTER_BLOCKED_ORGS', ''))
+        ))),
+        'blocked_origin_asns' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('IP_INFO_FILTER_BLOCKED_ASNS', ''))
+        ))),
+        'require_whois_country_match' => env('IP_INFO_FILTER_WHOIS_COUNTRY_MATCH', false),
+        'block_response_status' => (int) env('IP_INFO_FILTER_RESPONSE_STATUS', 403),
+        'block_response_message' => env('IP_INFO_FILTER_RESPONSE_MESSAGE', 'Access from your network is not allowed.'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Client IP logging
+    |--------------------------------------------------------------------------
+    */
+    'logging' => [
+        'enabled' => env('IP_INFO_CLIENT_LOG_ENABLED', false),
+        'channel' => env('IP_INFO_CLIENT_LOG_CHANNEL'),
+        'level' => env('IP_INFO_CLIENT_LOG_LEVEL', 'info'),
+        'message' => env('IP_INFO_CLIENT_LOG_MESSAGE', 'Client IP intelligence'),
+        'include_whois' => env('IP_INFO_CLIENT_LOG_INCLUDE_WHOIS', true),
+        'include_threats' => env('IP_INFO_CLIENT_LOG_INCLUDE_THREATS', true),
+        'auto_log_on_lookup' => env('IP_INFO_CLIENT_LOG_ON_LOOKUP', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | WHOIS lookups (live TCP queries via IANA referral)
+    |--------------------------------------------------------------------------
+    */
+    'whois' => [
+        'enabled' => env('IP_INFO_WHOIS_ENABLED', false),
+        'timeout' => (int) env('IP_INFO_WHOIS_TIMEOUT', 5),
+        'cache_ttl' => (int) env('IP_INFO_WHOIS_CACHE_TTL', 86400),
+        'max_referrals' => (int) env('IP_INFO_WHOIS_MAX_REFERRALS', 2),
     ],
 
     'pulse' => [

@@ -7,6 +7,7 @@ namespace SuprunBohdan\IpInfo\Providers;
 use SuprunBohdan\IpInfo\Contracts\IpProvider;
 use SuprunBohdan\IpInfo\Data\GeoLocation;
 use SuprunBohdan\IpInfo\Data\IpAddress;
+use SuprunBohdan\IpInfo\Data\IpThreatSignals;
 use SuprunBohdan\IpInfo\Data\ProviderResult;
 use SuprunBohdan\IpInfo\Exceptions\ProviderException;
 use SuprunBohdan\IpInfo\Http\ResilientHttpExecutor;
@@ -49,7 +50,7 @@ final class HttpIpProvider implements IpProvider
         UrlAllowlistGuard::assertAllowlisted($urlTemplate, $allowedHosts, $allowInsecure);
 
         $timeout = (int) config('ip-info.http.timeout', 3);
-        $url = sprintf($urlTemplate, urlencode($ip->value));
+        $url = $this->buildRequestUrl($driver, $urlTemplate, $ip->value);
 
         try {
             $result = $this->http->get('http:'.$driver, $url, $timeout);
@@ -64,6 +65,32 @@ final class HttpIpProvider implements IpProvider
         } catch (\Throwable $exception) {
             throw new ProviderException('HTTP provider error: '.$exception->getMessage(), 0, $exception);
         }
+    }
+
+    private function buildRequestUrl(string $driver, string $urlTemplate, string $ip): string
+    {
+        $url = sprintf($urlTemplate, urlencode($ip));
+
+        if (! (bool) config('ip-info.http.enrich_threat_signals', true)) {
+            return $url;
+        }
+
+        return match ($driver) {
+            'ip-api' => $this->appendQueryFields($url, 'status,country,countryCode,proxy,hosting'),
+            'ipinfo' => $url,
+            default => $url,
+        };
+    }
+
+    private function appendQueryFields(string $url, string $fields): string
+    {
+        $separator = str_contains($url, '?') ? '&' : '?';
+
+        if (preg_match('/(?:^|[?&])fields=/', $url) === 1) {
+            return $url;
+        }
+
+        return $url.$separator.'fields='.$fields;
     }
 
     private function parseDriverResponse(string $driver, mixed $data): ProviderResult
@@ -98,6 +125,7 @@ final class HttpIpProvider implements IpProvider
             $country,
             $provider,
             new GeoLocation($country, is_string($data['country'] ?? null) ? $data['country'] : null),
+            threats: $this->threatSignalsFromIpApi($data, $provider),
         );
     }
 
@@ -114,6 +142,58 @@ final class HttpIpProvider implements IpProvider
 
         $country = strtoupper($country);
 
-        return ProviderResult::hit($country, $provider, new GeoLocation($country));
+        return ProviderResult::hit(
+            $country,
+            $provider,
+            new GeoLocation($country),
+            threats: $this->threatSignalsFromIpInfo($data, $provider),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function threatSignalsFromIpApi(array $data, string $provider): ?IpThreatSignals
+    {
+        if (! (bool) config('ip-info.http.enrich_threat_signals', true)) {
+            return null;
+        }
+
+        $proxy = array_key_exists('proxy', $data) ? (bool) $data['proxy'] : null;
+        $hosting = array_key_exists('hosting', $data) ? (bool) $data['hosting'] : null;
+
+        if ($proxy === null && $hosting === null) {
+            return null;
+        }
+
+        return new IpThreatSignals(
+            proxy: $proxy,
+            hosting: $hosting,
+            source: $provider,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function threatSignalsFromIpInfo(array $data, string $provider): ?IpThreatSignals
+    {
+        if (! (bool) config('ip-info.http.enrich_threat_signals', true)) {
+            return null;
+        }
+
+        $privacy = $data['privacy'] ?? null;
+
+        if (! is_array($privacy)) {
+            return null;
+        }
+
+        return new IpThreatSignals(
+            tor: array_key_exists('tor', $privacy) ? (bool) $privacy['tor'] : null,
+            proxy: array_key_exists('proxy', $privacy) ? (bool) $privacy['proxy'] : null,
+            vpn: array_key_exists('vpn', $privacy) ? (bool) $privacy['vpn'] : null,
+            hosting: array_key_exists('hosting', $privacy) ? (bool) $privacy['hosting'] : null,
+            source: $provider,
+        );
     }
 }

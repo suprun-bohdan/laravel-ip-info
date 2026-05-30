@@ -82,6 +82,29 @@ Route::middleware('geo.share')->group(function () {
 | `geo.block` | `BlockCountries` | Block by country (`geo.block:RU,BY`) |
 | `geo.allow` | `AllowCountries` | Allow-list only |
 | `geo.share` | `ShareClientGeo` | API/Inertia geo payload |
+| `ip.log` | `LogClientIp` | Structured client IP logging (v4.3+) |
+| `ip.filter` | `FilterClientIp` | Block Tor/proxy/WHOIS rules (v4.3+) |
+
+```php
+Route::middleware(['ip.resolve', 'ip.log', 'ip.filter'])->group(function () {
+    // Resolve + log + filter (Tor, proxy, WHOIS netname/ASN, etc.)
+});
+```
+
+## IP intelligence (v4.3+)
+
+Live WHOIS (IANA → RIR, TCP :43), threat signals, privacy profile, and optional request logging:
+
+```php
+$intel = client_ip_intel(withWhois: true);
+$intel->geo->countryCode();
+$intel->whois?->netname;
+$intel->whois?->originAsn;
+
+php artisan ip-info:whois 8.8.8.8
+```
+
+Key env vars: `IP_INFO_WHOIS_ENABLED`, `IP_INFO_CLIENT_LOG_ENABLED`, `IP_INFO_FILTERING_ENABLED`, `IP_INFO_TOR_EXIT_CIDRS`.
 
 ## Blade (v4.2+)
 
@@ -105,6 +128,11 @@ Country: @clientcountry('XX')
 | `client_country(?Request $r = null, ?string $default = null)` | `?string` | Uses request memo + cache |
 | `client_ip(?Request $r = null)` | `string` | Reuses middleware attribute when set |
 | `client_ip_info(?Request $r = null)` | `IpInfoResult` | Full DTO |
+| `normalize_ip(string $ip)` | `string` | Canonical IP (v4.3+) |
+| `ip_privacy(?string $ip = null)` | `IpPrivacyProfile` | Private/public/reserved (v4.3+) |
+| `ip_threats(?string $ip = null)` | `IpThreatSignals` | Tor/proxy/VPN/hosting (v4.3+) |
+| `client_ip_intel(?Request $r = null, bool $withWhois = false)` | `ClientIpIntel` | Geo + privacy + threats + WHOIS (v4.3+) |
+| `whois_lookup(string $ip, bool $force = false)` | `?WhoisRecord` | Live WHOIS lookup (v4.3+) |
 | `request()->ipInfo()` | `IpInfoResult` | Macro |
 | `request()->isCountry('UA', ...)` | `bool` | Macro |
 

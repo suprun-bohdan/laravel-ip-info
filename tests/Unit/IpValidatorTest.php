@@ -121,4 +121,14 @@ final class IpNormalizerTest extends TestCase
     {
         $this->assertSame('192.0.2.1', $this->normalizer->normalize('::ffff:192.0.2.1'));
     }
+
+    public function test_it_canonicalizes_expanded_ipv6(): void
+    {
+        $this->assertSame('2001:4860:4860::8888', $this->normalizer->normalize('2001:4860:4860:0:0:0:0:8888'));
+    }
+
+    public function test_it_anonymizes_ipv6_to_network_prefix(): void
+    {
+        $this->assertSame('2001:4860:4860::', $this->normalizer->anonymize('2001:4860:4860::8888'));
+    }
 }

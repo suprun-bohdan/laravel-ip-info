@@ -13,6 +13,8 @@ use SuprunBohdan\IpInfo\Contracts\IpProviderResolver;
 use SuprunBohdan\IpInfo\Data\GeoLocation;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\IpInfoResult;
+use SuprunBohdan\IpInfo\Data\IpPrivacyProfile;
+use SuprunBohdan\IpInfo\Data\IpThreatSignals;
 use SuprunBohdan\IpInfo\Data\ProviderResult;
 use SuprunBohdan\IpInfo\Jobs\ProcessIpLookups;
 use SuprunBohdan\IpInfo\Laravel\Events\IpLookupCompleted;
@@ -21,6 +23,9 @@ use SuprunBohdan\IpInfo\Laravel\Events\IpLookupStarted;
 use SuprunBohdan\IpInfo\Providers\ChainProvider;
 use SuprunBohdan\IpInfo\Resolvers\RequestIpResolver;
 use SuprunBohdan\IpInfo\Resolvers\StringIpResolver;
+use SuprunBohdan\IpInfo\Support\IpNormalizer;
+use SuprunBohdan\IpInfo\Support\IpPrivacyInspector;
+use SuprunBohdan\IpInfo\Support\IpThreatInspector;
 use SuprunBohdan\IpInfo\Support\IpValidator;
 use SuprunBohdan\IpInfo\Testing\FakeIpProvider;
 use Throwable;
@@ -38,6 +43,9 @@ final class IpInfoManager implements IpLookupContract
         private StringIpResolver $stringResolver,
         private RequestIpResolver $requestResolver,
         private IpValidator $validator,
+        private IpNormalizer $normalizer,
+        private IpPrivacyInspector $privacyInspector,
+        private IpThreatInspector $threatInspector,
         private IpCache $cache,
         private Dispatcher $events,
         private IpProviderResolver $providerResolver,
@@ -202,6 +210,27 @@ final class IpInfoManager implements IpLookupContract
         return $this->validator->shouldSkipExternalLookup($address->value);
     }
 
+    public function normalizedIp(IpAddress $address): string
+    {
+        return $this->normalizer->normalize($address->value);
+    }
+
+    public function privacyProfile(IpAddress $address): IpPrivacyProfile
+    {
+        return $this->privacyInspector->profile($address->value);
+    }
+
+    public function threatSignals(IpAddress $address, ?IpThreatSignals $providerThreats = null): IpThreatSignals
+    {
+        $local = $this->threatInspector->inspect($address->value);
+
+        if ($providerThreats === null) {
+            return $local;
+        }
+
+        return $local->merge($providerThreats);
+    }
+
     public function isFakeMode(): bool
     {
         return $this->fakeMode;
@@ -245,6 +274,7 @@ final class IpInfoManager implements IpLookupContract
             $isPublic,
             $isPrivate,
             $providerResult->provider,
+            $this->threatSignals($address, $providerResult->threats),
         );
     }
 
@@ -308,6 +338,7 @@ final class IpInfoManager implements IpLookupContract
             $isPublic,
             $isPrivate,
             $provider,
+            $this->threatInspector->inspect($address->value),
         );
     }
 }

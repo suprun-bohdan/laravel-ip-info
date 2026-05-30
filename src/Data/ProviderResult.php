@@ -22,6 +22,7 @@ final readonly class ProviderResult
         public ProviderStatus $status,
         public ?GeoLocation $geo = null,
         public ?string $reason = null,
+        public ?IpThreatSignals $threats = null,
     ) {
         $this->resolved = $status === ProviderStatus::Hit || $status === ProviderStatus::Miss;
     }
@@ -66,8 +67,9 @@ final readonly class ProviderResult
         string $provider,
         ?GeoLocation $geo = null,
         ?string $reason = null,
+        ?IpThreatSignals $threats = null,
     ): self {
-        return new self($countryCode, $provider, ProviderStatus::Hit, $geo, $reason);
+        return new self($countryCode, $provider, ProviderStatus::Hit, $geo, $reason, $threats);
     }
 
     /**

@@ -14,6 +14,9 @@ use SuprunBohdan\IpInfo\Laravel\IpInfoQuery;
 use SuprunBohdan\IpInfo\Providers\MutableIpProviderResolver;
 use SuprunBohdan\IpInfo\Resolvers\RequestIpResolver;
 use SuprunBohdan\IpInfo\Resolvers\StringIpResolver;
+use SuprunBohdan\IpInfo\Support\IpNormalizer;
+use SuprunBohdan\IpInfo\Support\IpPrivacyInspector;
+use SuprunBohdan\IpInfo\Support\IpThreatInspector;
 use SuprunBohdan\IpInfo\Support\IpValidator;
 use SuprunBohdan\IpInfo\Tests\TestCase;
 
@@ -39,6 +42,9 @@ final class IpInfoQueryTest extends TestCase
             $this->app->make(StringIpResolver::class),
             $this->app->make(RequestIpResolver::class),
             $this->app->make(IpValidator::class),
+            $this->app->make(IpNormalizer::class),
+            $this->app->make(IpPrivacyInspector::class),
+            $this->app->make(IpThreatInspector::class),
             new NullIpCache,
             $this->app->make(Dispatcher::class),
             $resolver,

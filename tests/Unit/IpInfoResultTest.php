@@ -30,6 +30,7 @@ final class IpInfoResultTest extends TestCase
             'is_public' => true,
             'is_private' => false,
             'provider' => 'database',
+            'threats' => null,
         ];
 
         $this->assertSame($expected, $result->toArray());

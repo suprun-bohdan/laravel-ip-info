@@ -8,6 +8,10 @@ use SuprunBohdan\IpInfo\Contracts\IpLookupContract;
 use SuprunBohdan\IpInfo\Data\GeoLocation;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\IpInfoResult;
+use SuprunBohdan\IpInfo\Data\IpPrivacyProfile;
+use SuprunBohdan\IpInfo\Data\IpThreatSignals;
+use SuprunBohdan\IpInfo\Data\WhoisRecord;
+use SuprunBohdan\IpInfo\Intel\ClientIpIntel;
 
 final class IpInfoQuery
 {
@@ -41,6 +45,60 @@ final class IpInfoQuery
     public function isPrivate(): bool
     {
         return $this->manager->isPrivate($this->address);
+    }
+
+    public function normalizedIp(): string
+    {
+        return $this->manager->normalizedIp($this->address);
+    }
+
+    public function privacy(): IpPrivacyProfile
+    {
+        return $this->manager->privacyProfile($this->address);
+    }
+
+    public function threats(): IpThreatSignals
+    {
+        return $this->result()->threats ?? $this->manager->threatSignals($this->address);
+    }
+
+    public function isTor(): bool
+    {
+        return $this->threats()->isTor();
+    }
+
+    public function isProxy(): bool
+    {
+        return $this->threats()->isProxy();
+    }
+
+    public function isVpn(): bool
+    {
+        return $this->threats()->isVpn();
+    }
+
+    public function isHosting(): bool
+    {
+        return $this->threats()->isHosting();
+    }
+
+    public function isAnonymous(): bool
+    {
+        return $this->threats()->isAnonymous();
+    }
+
+    public function whois(bool $force = false): ?WhoisRecord
+    {
+        return app(\SuprunBohdan\IpInfo\Whois\WhoisLookupService::class)->lookup($this->ip(), $force);
+    }
+
+    public function intel(bool $withWhois = false): ClientIpIntel
+    {
+        return app(\SuprunBohdan\IpInfo\Intel\ClientIpIntelBuilder::class)->fromResult(
+            $this->result(),
+            $this->privacy(),
+            $withWhois,
+        );
     }
 
     public function result(): IpInfoResult

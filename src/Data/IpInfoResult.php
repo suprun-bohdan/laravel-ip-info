@@ -16,6 +16,7 @@ final readonly class IpInfoResult implements JsonSerializable
         public bool $isPublic,
         public bool $isPrivate,
         public ?string $provider = null,
+        public ?IpThreatSignals $threats = null,
     ) {}
 
     public function countryCode(): ?string
@@ -93,6 +94,31 @@ final readonly class IpInfoResult implements JsonSerializable
         return true;
     }
 
+    public function isTor(): bool
+    {
+        return $this->threats?->isTor() ?? false;
+    }
+
+    public function isProxy(): bool
+    {
+        return $this->threats?->isProxy() ?? false;
+    }
+
+    public function isVpn(): bool
+    {
+        return $this->threats?->isVpn() ?? false;
+    }
+
+    public function isHosting(): bool
+    {
+        return $this->threats?->isHosting() ?? false;
+    }
+
+    public function isAnonymous(): bool
+    {
+        return $this->threats?->isAnonymous() ?? false;
+    }
+
     public function anonymized(): self
     {
         return new self(
@@ -101,6 +127,7 @@ final readonly class IpInfoResult implements JsonSerializable
             $this->isPublic,
             $this->isPrivate,
             $this->provider,
+            $this->threats,
         );
     }
 
@@ -116,6 +143,7 @@ final readonly class IpInfoResult implements JsonSerializable
             $this->isPublic,
             $this->isPrivate,
             $this->provider,
+            $this->threats,
         );
     }
 
@@ -139,7 +167,14 @@ final readonly class IpInfoResult implements JsonSerializable
      *     is_eu: ?bool,
      *     is_public: bool,
      *     is_private: bool,
-     *     provider: ?string
+     *     provider: ?string,
+     *     threats: ?array{
+     *         tor: ?bool,
+     *         proxy: ?bool,
+     *         vpn: ?bool,
+     *         hosting: ?bool,
+     *         source: ?string
+     *     }
      * }
      */
     public function toArray(): array
@@ -153,6 +188,7 @@ final readonly class IpInfoResult implements JsonSerializable
             'is_public' => $this->isPublic,
             'is_private' => $this->isPrivate,
             'provider' => $this->provider,
+            'threats' => $this->threats?->toArray(),
         ];
     }
 
@@ -165,7 +201,14 @@ final readonly class IpInfoResult implements JsonSerializable
      *     is_eu: ?bool,
      *     is_public: bool,
      *     is_private: bool,
-     *     provider: ?string
+     *     provider: ?string,
+     *     threats: ?array{
+     *         tor: ?bool,
+     *         proxy: ?bool,
+     *         vpn: ?bool,
+     *         hosting: ?bool,
+     *         source: ?string
+     *     }
      * }
      */
     public function jsonSerialize(): array
@@ -175,19 +218,6 @@ final readonly class IpInfoResult implements JsonSerializable
 
     private function anonymizeIp(string $ip): string
     {
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-            $parts = explode('.', $ip);
-
-            return implode('.', [$parts[0], $parts[1], $parts[2], '0']);
-        }
-
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            $normalized = (new IpNormalizer)->normalize($ip);
-            $segments = explode(':', $normalized);
-
-            return implode(':', array_slice($segments, 0, 4)).'::';
-        }
-
-        return $ip;
+        return (new IpNormalizer)->anonymize($ip);
     }
 }

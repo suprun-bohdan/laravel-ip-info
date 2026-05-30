@@ -44,7 +44,7 @@ final class PublishedFileComparatorTest extends TestCase
     public function test_it_detects_modified_file(): void
     {
         $temp = tempnam(sys_get_temp_dir(), 'ip-info-config-');
-        file_put_contents((string) $temp, "<?php\n// @ip-info-stub-version 4.2.0\n// custom\n");
+        file_put_contents((string) $temp, "<?php\n// @ip-info-stub-version 4.3.0\n// custom\n");
 
         $status = $this->comparator->compare((string) $temp, PackageStubs::configStubPath());
 

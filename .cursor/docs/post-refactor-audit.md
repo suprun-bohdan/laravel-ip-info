@@ -63,4 +63,4 @@ IpInfo::forRequest($request)->ip();
 - Additional HTTP geo providers beyond CleanTalk
 - Configurable bogon filtering
 
-See [migration-guide.md](migration-guide.md).
+See [migration-guide.md](../../docs/migration-guide.md).

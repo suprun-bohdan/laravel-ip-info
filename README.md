@@ -16,35 +16,109 @@ composer require suprun-bohdan/laravel-ip-info
 php artisan ip-info:install --quick --register-middleware --force
 ```
 
-```php
-$country = client_country();              // helper
-$country = ip_info()->countryCode();        // fluent
-$country = request()->clientCountry();      // macro
+After install, public IP lookups work immediately via the HTTP provider (`quick_start` preset). For production, prefer MaxMind or the offline IPv4 database.
 
-if (ip_info()->isCountry('UA')) {
+```php
+// Helpers (v4.2+)
+$country = client_country();
+$country = client_country(default: 'XX');
+
+// Fluent
+if (ip_info()->isCountry('UA', 'PL')) {
     // ...
 }
-```
 
-Classic facade API still works:
+// Request macros
+$country = request()->clientCountry();
+$ip = request()->clientIp();
 
-```php
+// Classic facade
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
 
-$country = IpInfo::for('8.8.8.8')->countryCode();
-$client = IpInfo::forRequest(request())->countryCode();
+IpInfo::for('8.8.8.8')->countryCode();
+IpInfo::forRequest(request())->countryCode();
 ```
 
-Production (Cloudflare):
+### Production behind Cloudflare
 
 ```bash
 php artisan ip-info:install --preset=cloudflare
 php artisan ip-info:refresh-cloudflare-cidrs --write-env-snippet
-# paste IP_INFO_TRUSTED_PROXY_CIDRS into .env
-# .env: IP_INFO_PRESET=cloudflare
 ```
 
-Testing:
+Add to `.env`:
+
+```env
+IP_INFO_PRESET=cloudflare
+IP_INFO_TRUSTED_PROXY_CIDRS=173.245.48.0/20,...
+```
+
+Register client IP resolution (opt-in):
+
+```bash
+php artisan ip-info:install --register-middleware --force
+# or: php artisan ip-info:sync --register-middleware --force
+```
+
+## Route middleware (v4.2+)
+
+```php
+Route::middleware(['ip.resolve', 'geo.block:RU,BY'])->group(function () {
+    // ResolveClientIp + block listed countries
+});
+
+Route::middleware('geo.allow:UA,PL')->group(function () {
+    // Allow-list only
+});
+
+Route::middleware('geo.share')->group(function () {
+    // Shares ClientGeoData; Inertia apps get shared prop `geo`
+});
+```
+
+| Alias | Class | Purpose |
+|-------|-------|---------|
+| `ip.resolve` | `ResolveClientIp` | Sets `ip_info` / `client_ip` on request |
+| `geo.block` | `BlockCountries` | Block by country (`geo.block:RU,BY`) |
+| `geo.allow` | `AllowCountries` | Allow-list only |
+| `geo.share` | `ShareClientGeo` | API/Inertia geo payload |
+
+## Blade (v4.2+)
+
+```blade
+@country('UA', 'PL')
+    Content for Ukraine or Poland
+@endcountry
+
+@unlesscountry('RU')
+    Hidden for Russia
+@endunlesscountry
+
+Country: @clientcountry('XX')
+```
+
+## Helpers reference (v4.2+)
+
+| Function / macro | Returns | Notes |
+|------------------|---------|-------|
+| `ip_info(?string $ip = null)` | `IpInfoQuery` | Current request when `$ip` omitted |
+| `client_country(?Request $r = null, ?string $default = null)` | `?string` | Uses request memo + cache |
+| `client_ip(?Request $r = null)` | `string` | Reuses middleware attribute when set |
+| `client_ip_info(?Request $r = null)` | `IpInfoResult` | Full DTO |
+| `request()->ipInfo()` | `IpInfoResult` | Macro |
+| `request()->isCountry('UA', ...)` | `bool` | Macro |
+
+Fluent on `IpInfoQuery` / `IpInfoResult`: `isCountry()`, `inCountries()`, `isEu()`, `countryOr()`, `countryOrFail()`.
+
+## Security model (client IP)
+
+- **Never trust `X-Forwarded-For` blindly.** Headers are read only when the remote address matches `trusted_proxies.proxy_cidrs`, unless `require_trusted_proxy_for_headers=false`.
+- **Mirror Laravel `TrustProxies`** when using `respect_laravel=true` (default).
+- **Cloudflare presets** require `IP_INFO_TRUSTED_PROXY_CIDRS`. Refresh with `ip-info:refresh-cloudflare-cidrs`.
+- **Runtime presets** — set `IP_INFO_PRESET=cloudflare|nginx_proxy|quick_start|local_only` (merged on each boot).
+- **HTTP providers** use HTTPS by default. Insecure `http://` URLs require `IP_INFO_HTTP_ALLOW_INSECURE=true`.
+
+## Testing
 
 ```php
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
@@ -58,69 +132,22 @@ class ExampleTest extends TestCase
     {
         $this->fakeIpInfo(['203.0.113.1' => 'UA']);
 
-        $this->assertSame('UA', IpInfo::for('203.0.113.1')->countryCode());
+        $this->assertSame('UA', client_country());
+        $this->assertTrue(ip_info('203.0.113.1')->isCountry('UA'));
     }
 }
 ```
 
-Middleware (Cloudflare preset):
-
-```bash
-php artisan vendor:publish --tag=ip-info-middleware
-# Configure trusted proxy CIDRs, e.g. IP_INFO_TRUSTED_PROXY_CIDRS=173.245.48.0/20,...
-# .env: IP_INFO_PRESET=cloudflare
-```
-
-## Security model (client IP)
-
-- **Never trust `X-Forwarded-For` blindly.** Headers are read only when the remote address matches `trusted_proxies.proxy_cidrs`, unless `require_trusted_proxy_for_headers=false`.
-- **Mirror Laravel `TrustProxies`** when using `respect_laravel=true` (default). Set `trusted_proxies.sync_with_laravel` as a reminder to keep both in sync.
-- **Cloudflare presets** require `IP_INFO_TRUSTED_PROXY_CIDRS` (Cloudflare egress ranges) or network-level restriction. Presets do not embed rotating Cloudflare CIDRs.
-- **HTTP providers** use HTTPS by default. Insecure `http://` URLs require `IP_INFO_HTTP_ALLOW_INSECURE=true`.
-
-## Testing / fake behavior
-
-`IpInfo::fake()` and `fakeSequence()`:
-
-- Replace the provider chain for the current manager instance.
-- **Bypass positive and negative cache** — tests stay deterministic even when cache is populated.
-- Do **not** write lookup results to production cache while fake mode is active.
-
-```php
-IpInfo::fake(['8.8.8.8' => 'UA']); // overrides cached US for 8.8.8.8
-IpInfo::assertLookedUp('8.8.8.8');
-```
-
-## Batch lookup
-
-`IpInfo::forMany()` resolves cache hits first, then uses `BatchIpProvider::lookupMany()` on the chain when available (offline DB uses a single bounded SQL query). Remaining misses fall back to per-IP chain lookup.
-
-## Architecture
-
-| Layer | Role |
-|-------|------|
-| `IpInfoManager` | Orchestration, cache, events, fake mode |
-| `IpProviderResolver` | Injectable provider access (no service locator) |
-| `ChainProvider` | Ordered providers; stops on `Hit`/`Miss` |
-| `ProviderStatus` | Explicit `skipped` / `failed` / `miss` / `hit` |
-| `IpCache` | Positive + negative TTL cache |
-| Custom providers | `providers.custom` or `IpInfoBuildingChain` event |
-
-Privacy/logging policy lives in `IpPrivacyPolicy` — DTOs do not read Laravel config.
+`IpInfo::fake()` bypasses positive/negative cache and skips cache writes during tests.
 
 ## What this package does
 
 - Normalizes and validates IPv4/IPv6 input.
 - Classifies public, private, localhost, link-local, and reserved addresses.
-- Resolves client IP from HTTP requests using Laravel trusted proxy behavior by default.
-- Looks up country codes through a provider chain:
-  - `LocalProvider` — private/local/reserved IPs (no external call)
-  - `DatabaseRangeProvider` — optional offline IPv4 ranges
-  - `MaxMindProvider` — optional offline GeoLite2 MMDB
-  - `HttpIpProvider` — optional HTTP drivers (`ip-api`, `ipinfo`)
-  - `CleanTalkProvider` — optional HTTP fallback
-- Caches public IP lookups via Laravel cache stores (with negative cache).
-- Optional HTTP endpoint, middleware, and Artisan commands.
+- Resolves client IP from HTTP requests with trusted-proxy awareness.
+- Looks up country codes through a provider chain (`local`, `database`, `maxmind`, `http`, `cleantalk`).
+- Caches lookups with configurable negative TTL.
+- Geo block/allow middleware, validation rules, sync/diagnose tooling.
 
 ## Requirements
 
@@ -128,15 +155,25 @@ Privacy/logging policy lives in `IpPrivacyPolicy` — DTOs do not read Laravel c
 - Laravel ^10, ^11, or ^12
 - Laravel cache (array, file, redis, etc.)
 - Database optional (offline IPv4 lookup)
-- `maxmind-db/reader` optional (MaxMind MMDB lookup)
+- `maxmind-db/reader` optional (MaxMind GeoLite2)
 
-## Installation
+## Installation options
 
 ```bash
 composer require suprun-bohdan/laravel-ip-info
-php artisan ip-info:install
+
+# Recommended for first run — HTTP geo works immediately
+php artisan ip-info:install --quick
+
+# Production presets
 php artisan ip-info:install --preset=cloudflare
+php artisan ip-info:install --preset=nginx_proxy
 php artisan ip-info:install --with-database
+
+# Optional automation
+php artisan ip-info:install --register-middleware --force
+php artisan ip-info:install --with-schedule
+php artisan ip-info:starter --quick --register-middleware --force
 ```
 
 Publish configuration only:
@@ -150,6 +187,7 @@ Optional offline database:
 ```bash
 # .env: IP_INFO_DATABASE_ENABLED=true
 php artisan ip-info:install-database
+php artisan ip-info:update-database
 ```
 
 Optional MaxMind GeoLite2:
@@ -160,27 +198,19 @@ composer require maxmind-db/reader
 php artisan ip-info:update-maxmind
 ```
 
-Diagnostics:
-
-```bash
-php artisan ip-info:diagnose
-php artisan ip-info:diagnose 8.8.8.8 --json
-```
-
 ## Application sync
-
-Audit how the package is integrated into your Laravel app:
 
 ```bash
 php artisan ip-info:sync
 php artisan ip-info:sync --json
 php artisan ip-info:sync --fix
-php artisan ip-info:sync --publish-config --publish-middleware
+php artisan ip-info:sync --register-middleware --force
+php artisan ip-info:sync --with-schedule
 ```
 
-`--fix` only performs **safe** actions: publish missing config/middleware stubs and run migrations. It does **not** edit `bootstrap/app.php`, `Kernel.php`, or `.env`. Preset recommendations are report-only.
+`--fix` performs **safe** actions only: publish missing stubs and migrate. Middleware registration and schedule stubs require explicit flags.
 
-When routes are enabled, configure protection:
+When routes are enabled:
 
 ```env
 IP_INFO_ROUTES_ENABLED=true
@@ -193,54 +223,61 @@ File: `config/ip-info.php`
 
 | Section | Purpose |
 |---------|---------|
-| `cache` | Enable/disable cache, store, TTL, negative TTL, key prefix |
-| `providers.chain` | Provider order: `local`, `database`, `maxmind`, `http`, `cleantalk` |
-| `presets` | Named proxy/provider presets (`cloudflare`, `nginx_proxy`, `local_only`) |
+| `active_preset` / `IP_INFO_PRESET` | Runtime preset merge (`cloudflare`, `quick_start`, …) |
+| `cache` | TTL, negative cache, prefix, tenant prefix |
+| `providers.chain` | Provider order |
+| `presets` | Named proxy/provider bundles |
+| `security` | Blocked/allowed countries, response status/message |
 | `maxmind` | GeoLite2 MMDB path and license key |
-| `http` | HTTP driver selection, HTTPS enforcement, timeouts |
-| `trusted_proxies` | Header allowlist, proxy CIDRs, Laravel fallback |
-| `routes` | Opt-in endpoint path and route middleware |
+| `http` | Driver (`ipinfo`, `ip-api`), HTTPS enforcement |
+| `trusted_proxies` | Header allowlist, proxy CIDRs |
+| `routes` | Opt-in API endpoint |
 | `privacy` | Logging policy via `IpPrivacyPolicy` |
-
-See [docs/migration-guide.md](docs/migration-guide.md) and [docs/roadmap-v3.md](docs/roadmap-v3.md).
-
-## Helpers and route aliases
-
-| API | Example |
-|-----|---------|
-| `client_country()` | `client_country(default: 'XX')` |
-| `ip_info()` | `ip_info('8.8.8.8')->isCountry('US')` |
-| `geo.block:RU,BY` | Route middleware alias |
-| `geo.allow:UA,PL` | Allow-list middleware alias |
-| `ip.resolve` | Attach `ip_info` to request attributes |
-| `geo.share` | Share `ClientGeoData` / Inertia `geo` prop |
-
-Blade: `@country('UA')`, `@unlesscountry('RU')`, `@clientcountry('XX')`.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `ip-info:install` | Publish config, migrate, optional preset/database |
-| `ip-info:install --quick` | Enable HTTP geo via `quick_start` preset |
+| `ip-info:install` | Publish config, migrate, optional preset |
+| `ip-info:install --quick` | Enable HTTP geo (`quick_start` preset) |
 | `ip-info:install --register-middleware` | Register `ResolveClientIp` (opt-in) |
+| `ip-info:install --with-schedule` | Append update stubs to `routes/console.php` |
 | `ip-info:refresh-cloudflare-cidrs` | Fetch Cloudflare egress CIDRs for `.env` |
-| `ip-info:install-database` | Download IPv4 CSV and seed offline DB |
-| `ip-info:update-database` | Refresh offline CSV database |
+| `ip-info:sync` | Audit integration (config, middleware, routes, security) |
+| `ip-info:diagnose` | Provider health + optional IP lookup |
+| `ip-info:about` | Capability matrix (preset, helpers, aliases) |
+| `ip-info:starter` | Publish middleware + install bundle |
+| `ip-info:update-database` | Refresh offline IPv4 CSV |
 | `ip-info:update-maxmind` | Download GeoLite2-Country MMDB |
-| `ip-info:sync` | Audit config/middleware/routes/security integration |
-| `ip-info:sync --fix` | Safe publish/migrate only |
-| `ip-info:diagnose` | Provider/runtime health + optional IP lookup |
-| `ip-info:starter` | Publish starter middleware/config bundle |
+
+## Architecture
+
+| Layer | Role |
+|-------|------|
+| `IpInfoManager` | Orchestration, cache, events, fake mode |
+| `IpProviderResolver` | Injectable provider access |
+| `ChainProvider` | Ordered providers; stops on hit/miss |
+| `PresetConfigurator` | Runtime preset merge from `.env` |
+| `IpCache` | Positive + negative TTL cache |
+| Custom providers | `providers.custom` or `IpInfoBuildingChain` event |
+
+## Documentation
+
+Public docs: [docs/README.md](docs/README.md)
+
+- [Migration guide](docs/migration-guide.md) — upgrades and breaking changes
+- [vs alternatives](docs/vs-alternatives.md) — comparison with other packages
+- [Satellite packages](docs/satellite-packages.md) — ASN, fraud, Pulse UI (planned)
 
 ## Development
 
-Local Docker sandbox (gitignored):
-
 ```bash
-cd sandbox && make init && make test
-make test-package   # PHPUnit + PHPStan in package root
+composer test
+composer analyse
+composer format:test
 ```
+
+Local Docker sandbox (gitignored): `cd sandbox && make init && make test`
 
 ## License
 

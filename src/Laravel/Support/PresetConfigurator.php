@@ -41,7 +41,7 @@ final class PresetConfigurator
                 $current = [];
             }
 
-            config(['ip-info.'.$section => array_replace_recursive($current, $values)]);
+            config(['ip-info.'.$section => $this->mergeSection($current, $values)]);
         }
     }
 
@@ -60,5 +60,34 @@ final class PresetConfigurator
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $current
+     * @param  array<string, mixed>  $values
+     * @return array<string, mixed>
+     */
+    private function mergeSection(array $current, array $values): array
+    {
+        foreach ($values as $key => $value) {
+            if (is_array($value) && array_is_list($value)) {
+                $current[$key] = $value;
+
+                continue;
+            }
+
+            if (is_array($value)) {
+                $existing = $current[$key] ?? [];
+                $current[$key] = is_array($existing)
+                    ? array_replace_recursive($existing, $value)
+                    : $value;
+
+                continue;
+            }
+
+            $current[$key] = $value;
+        }
+
+        return $current;
     }
 }

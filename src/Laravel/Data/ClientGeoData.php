@@ -25,10 +25,6 @@ final readonly class ClientGeoData implements JsonSerializable
     {
         $request ??= request();
 
-        if (! $request instanceof Request) {
-            throw new \RuntimeException('ClientGeoData::fromRequest() requires an HTTP request.');
-        }
-
         $cached = $request->attributes->get('ip_info');
 
         if ($cached instanceof IpInfoResult) {

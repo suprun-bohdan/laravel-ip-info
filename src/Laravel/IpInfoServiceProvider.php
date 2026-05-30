@@ -7,6 +7,7 @@ namespace SuprunBohdan\IpInfo\Laravel;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Pulse\Contracts\Ingest;
 use Laravel\Pulse\Facades\Pulse;
@@ -40,17 +41,16 @@ use SuprunBohdan\IpInfo\Laravel\Console\UpdateDatabaseCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\UpdateMaxMindCommand;
 use SuprunBohdan\IpInfo\Laravel\Database\LaravelSchemaInspector;
 use SuprunBohdan\IpInfo\Laravel\Events\IpInfoBuildingChain;
+use SuprunBohdan\IpInfo\Laravel\Http\LaravelIpHttpClient;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\AllowCountries;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\BlockCountries;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\ResolveClientIp;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\ShareClientGeo;
-use SuprunBohdan\IpInfo\Laravel\Http\LaravelIpHttpClient;
+use SuprunBohdan\IpInfo\Laravel\Pulse\Livewire\IpInfoCard;
+use SuprunBohdan\IpInfo\Laravel\Pulse\Recorders\IpInfoRecorder;
 use SuprunBohdan\IpInfo\Laravel\Support\CloudflareCidrFetcher;
 use SuprunBohdan\IpInfo\Laravel\Support\PresetConfigurator;
 use SuprunBohdan\IpInfo\Laravel\Support\RegisterRequestMacros;
-use SuprunBohdan\IpInfo\Laravel\View\BladeIpInfoDirectives;
-use SuprunBohdan\IpInfo\Laravel\Pulse\Livewire\IpInfoCard;
-use SuprunBohdan\IpInfo\Laravel\Pulse\Recorders\IpInfoRecorder;
 use SuprunBohdan\IpInfo\Laravel\Sync\HealthChecker;
 use SuprunBohdan\IpInfo\Laravel\Sync\IpInfoSyncFixer;
 use SuprunBohdan\IpInfo\Laravel\Sync\IpInfoSyncInspector;
@@ -58,6 +58,7 @@ use SuprunBohdan\IpInfo\Laravel\Sync\MiddlewareRegistrationDetector;
 use SuprunBohdan\IpInfo\Laravel\Sync\PresetRecommendationBuilder;
 use SuprunBohdan\IpInfo\Laravel\Sync\PublishedFileComparator;
 use SuprunBohdan\IpInfo\Laravel\Telescope\IpInfoTelescopeRecorder;
+use SuprunBohdan\IpInfo\Laravel\View\BladeIpInfoDirectives;
 use SuprunBohdan\IpInfo\Privacy\IpPrivacyPolicy;
 use SuprunBohdan\IpInfo\Providers\ChainProvider;
 use SuprunBohdan\IpInfo\Providers\CleanTalkProvider;
@@ -241,7 +242,7 @@ final class IpInfoServiceProvider extends ServiceProvider
 
     private function registerBladeDirectives(): void
     {
-        if (! class_exists(\Illuminate\Support\Facades\Blade::class)) {
+        if (! class_exists(Blade::class)) {
             return;
         }
 

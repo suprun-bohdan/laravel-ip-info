@@ -25,12 +25,6 @@ final class ClientCountryIn implements ValidationRule
 
         $request = $this->request ?? request();
 
-        if (! $request instanceof Request) {
-            $fail('Unable to resolve client country.');
-
-            return;
-        }
-
         $country = IpInfo::forRequest($request)->countryCode();
         $allowed = array_map(static fn (string $code): string => strtoupper($code), $this->countries);
 

@@ -13,13 +13,17 @@
 .phpunit.cache
 *.zip
 
-# Cursor IDE and agent artifacts
-.cursor/
+# Cursor IDE and agent artifacts (.cursor/docs/ is tracked — internal maintainer/agent docs)
+.cursor/*
+!.cursor/docs/
+!.cursor/docs/**
 .cursorignore
 .cursorindexingignore
 .cursorrules
 *.cursorrules
-**/.cursor/
+**/.cursor/*
+!**/.cursor/docs/
+!**/.cursor/docs/**
 
 # Local Docker sandbox (not part of the package release)
 /sandbox/

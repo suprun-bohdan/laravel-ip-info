@@ -14,8 +14,11 @@ parameters:
             message: '#Trait SuprunBohdan\\IpInfo\\Testing\\InteractsWithIpInfo is used zero times#'
             path: src/Testing/InteractsWithIpInfo.php
         -
-            message: '#.*#'
-            path: src/Laravel/Pulse/Livewire/IpInfoCard.php
+            message: '#Trait SuprunBohdan\\IpInfo\\Laravel\\Database\\Concerns\\HasGeoFromIp is used zero times#'
+            path: src/Laravel/Database/Concerns/HasGeoFromIp.php
+        -
+            message: '#Call to function method_exists\(\) with Illuminate\\Routing\\Router and .*aliasMiddleware.* will always evaluate to true#'
+            path: src/Laravel/IpInfoServiceProvider.php
         -
             message: '#.*#'
             path: src/Laravel/Telescope/IpInfoTelescopeRecorder.php

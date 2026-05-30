@@ -25,6 +25,9 @@ final class CloudflareCidrFetcher
         return array_values(array_unique(array_merge($v4, $v6)));
     }
 
+    /**
+     * @param  list<string>  $cidrs
+     */
     public function toEnvSnippet(array $cidrs): string
     {
         return 'IP_INFO_TRUSTED_PROXY_CIDRS='.implode(',', $cidrs);

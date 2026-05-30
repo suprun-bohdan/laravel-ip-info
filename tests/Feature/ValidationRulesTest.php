@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace SuprunBohdan\IpInfo\Tests\Feature;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
+use SuprunBohdan\IpInfo\Laravel\Http\Rules\ClientCountryIn;
 use SuprunBohdan\IpInfo\Laravel\Http\Rules\ClientIpPublic;
 use SuprunBohdan\IpInfo\Laravel\Http\Rules\CountryIn;
+use SuprunBohdan\IpInfo\Laravel\Http\Rules\CountryNotIn;
 use SuprunBohdan\IpInfo\Tests\TestCase;
 
 final class ValidationRulesTest extends TestCase
@@ -62,7 +65,7 @@ final class ValidationRulesTest extends TestCase
 
         $validator = Validator::make(
             ['ip' => '8.8.8.8'],
-            ['ip' => [new \SuprunBohdan\IpInfo\Laravel\Http\Rules\CountryNotIn(['RU'])]],
+            ['ip' => [new CountryNotIn(['RU'])]],
         );
 
         $this->assertTrue($validator->fails());
@@ -72,11 +75,11 @@ final class ValidationRulesTest extends TestCase
     {
         IpInfo::fake(['203.0.113.10' => 'UA']);
 
-        $request = \Illuminate\Http\Request::create('/', 'GET', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $request = Request::create('/', 'GET', server: ['REMOTE_ADDR' => '203.0.113.10']);
         $this->app->instance('request', $request);
 
         $validator = Validator::make([], [
-            '_geo' => [new \SuprunBohdan\IpInfo\Laravel\Http\Rules\ClientCountryIn(['UA'], $request)],
+            '_geo' => [new ClientCountryIn(['UA'], $request)],
         ]);
 
         $this->assertFalse($validator->fails());

@@ -6,7 +6,6 @@ namespace SuprunBohdan\IpInfo\Laravel\Support;
 
 use Illuminate\Http\Request;
 use SuprunBohdan\IpInfo\Data\IpInfoResult;
-use SuprunBohdan\IpInfo\Laravel\IpInfoManager;
 
 final class RegisterRequestMacros
 {
@@ -18,36 +17,22 @@ final class RegisterRequestMacros
 
         Request::macro('ipInfo', function (): IpInfoResult {
             /** @var Request $this */
-            $cached = $this->attributes->get('ip_info');
-
-            if ($cached instanceof IpInfoResult) {
-                return $cached;
-            }
-
-            return app(IpInfoManager::class)->forRequest($this)->result();
+            return client_ip_info($this);
         });
 
         Request::macro('clientCountry', function (?string $default = null): ?string {
             /** @var Request $this */
-            $country = $this->ipInfo()->countryCode();
-
-            return $country ?? $default;
+            return client_country($this, $default);
         });
 
         Request::macro('clientIp', function (): string {
             /** @var Request $this */
-            $cached = $this->attributes->get('client_ip');
-
-            if (is_string($cached) && $cached !== '') {
-                return $cached;
-            }
-
-            return $this->ipInfo()->ip;
+            return client_ip($this);
         });
 
         Request::macro('isCountry', function (string ...$codes): bool {
             /** @var Request $this */
-            return $this->ipInfo()->isCountry(...$codes);
+            return client_ip_info($this)->isCountry(...$codes);
         });
     }
 }

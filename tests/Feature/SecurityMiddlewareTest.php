@@ -7,6 +7,7 @@ namespace SuprunBohdan\IpInfo\Tests\Feature;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
+use SuprunBohdan\IpInfo\Laravel\Http\Middleware\AllowCountries;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\BlockCountries;
 use SuprunBohdan\IpInfo\Tests\TestCase;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -41,7 +42,7 @@ final class SecurityMiddlewareTest extends TestCase
         IpInfo::fake(['203.0.113.10' => 'RU']);
 
         $request = Request::create('/', 'GET', server: ['REMOTE_ADDR' => '203.0.113.10']);
-        $middleware = new \SuprunBohdan\IpInfo\Laravel\Http\Middleware\AllowCountries;
+        $middleware = new AllowCountries;
 
         $this->expectException(HttpException::class);
         $middleware->handle($request, fn () => response('ok'), 'UA', 'PL');
@@ -52,7 +53,7 @@ final class SecurityMiddlewareTest extends TestCase
         IpInfo::fake(['203.0.113.10' => 'UA']);
 
         $request = Request::create('/', 'GET', server: ['REMOTE_ADDR' => '203.0.113.10']);
-        $middleware = new \SuprunBohdan\IpInfo\Laravel\Http\Middleware\AllowCountries;
+        $middleware = new AllowCountries;
 
         $response = $middleware->handle($request, fn () => response('ok'), 'UA');
 
@@ -65,8 +66,8 @@ final class SecurityMiddlewareTest extends TestCase
 
         IpInfo::fake(['203.0.113.10' => 'RU']);
 
-        $this->expectException(HttpException::class);
+        $response = $this->call('GET', '/blocked-test', [], [], [], ['REMOTE_ADDR' => '203.0.113.10']);
 
-        $this->call('GET', '/blocked-test', [], [], ['REMOTE_ADDR' => '203.0.113.10']);
+        $this->assertSame(403, $response->getStatusCode());
     }
 }

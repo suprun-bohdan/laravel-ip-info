@@ -24,7 +24,10 @@ final class PresetConfiguratorTest extends TestCase
     {
         $configurator = app(PresetConfigurator::class);
 
-        $configurator->mergePreset(config('ip-info.presets.quick_start'));
+        $presets = (array) config('ip-info.presets', []);
+
+        $this->assertArrayHasKey('quick_start', $presets);
+        $configurator->mergePreset($presets['quick_start']);
 
         $this->assertTrue((bool) config('ip-info.http.enabled'));
         $this->assertSame(['local', 'http', 'null'], config('ip-info.providers.chain'));

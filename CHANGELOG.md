@@ -114,7 +114,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - `Contracts/IpHttpClient`, `Contracts/SchemaInspector`.
-- [docs/psr-refactor-plan.md](docs/psr-refactor-plan.md).
+- [.cursor/docs/psr-refactor-plan.md](.cursor/docs/psr-refactor-plan.md).
 - Composer requirements: `psr/http-client`, `psr/http-factory`, `psr/http-message`.
 
 ## [3.0.0] - 2026-05-30
@@ -180,7 +180,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - CleanTalk provider enforces `api.cleantalk.org` host allowlist and disables HTTP redirects (SSRF hardening).
-- Updated [docs/post-refactor-audit.md](docs/post-refactor-audit.md) with v1.2/v1.3 status.
+- Updated [.cursor/docs/post-refactor-audit.md](.cursor/docs/post-refactor-audit.md) with v1.2/v1.3 status.
 
 ### Postponed
 
@@ -229,7 +229,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Larastan static analysis configuration.
 - Tests: cache behavior, route gating, install/update commands, CleanTalk provider, chain exception fallback, `IpRange`, query memoization.
 - Laravel 12 support in CI matrix.
-- [docs/post-refactor-audit.md](docs/post-refactor-audit.md).
+- [.cursor/docs/post-refactor-audit.md](.cursor/docs/post-refactor-audit.md).
 
 ### Changed
 

@@ -26,7 +26,7 @@ final class RequestMacrosTest extends TestCase
         IpInfo::fake(['203.0.113.10' => 'UA']);
 
         $request = Request::create('/', 'GET', server: ['REMOTE_ADDR' => '203.0.113.10']);
-        (new ResolveClientIp(app('ip-info')))->handle($request, fn ($req) => $req);
+        (new ResolveClientIp(app('ip-info')))->handle($request, fn () => response('ok'));
 
         $this->assertSame('203.0.113.10', $request->clientIp());
         $this->assertSame('UA', $request->ipInfo()->countryCode());

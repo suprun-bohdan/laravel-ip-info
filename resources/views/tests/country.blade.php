@@ -1,3 +1,3 @@
-@ifcountry('UA')
+@country('UA')
 visible
 @endcountry

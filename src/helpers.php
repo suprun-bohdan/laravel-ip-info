@@ -15,13 +15,7 @@ if (! function_exists('ip_info')) {
             return IpInfo::for($ip);
         }
 
-        $request = request();
-
-        if ($request instanceof Request) {
-            return IpInfo::forRequest($request);
-        }
-
-        throw new \RuntimeException('ip_info() requires a current HTTP request when no IP is provided.');
+        return IpInfo::forRequest(request());
     }
 }
 
@@ -29,10 +23,6 @@ if (! function_exists('client_ip_info')) {
     function client_ip_info(?Request $request = null): IpInfoResult
     {
         $request ??= request();
-
-        if (! $request instanceof Request) {
-            throw new \RuntimeException('client_ip_info() requires an HTTP request.');
-        }
 
         $cached = $request->attributes->get('ip_info');
 
@@ -57,10 +47,6 @@ if (! function_exists('client_ip')) {
     function client_ip(?Request $request = null): string
     {
         $request ??= request();
-
-        if (! $request instanceof Request) {
-            throw new \RuntimeException('client_ip() requires an HTTP request.');
-        }
 
         $cached = $request->attributes->get('client_ip');
 

@@ -165,8 +165,6 @@ Result helpers: `forLogging()`, `toMinimalArray()`, `isEu()`, `isInContinent()`,
 | Telescope | Optional `IpInfoTelescopeRecorder` (requires `laravel/telescope`) |
 | Pulse card | Livewire `IpInfoCard` when Pulse + Livewire installed |
 
-Satellite packages (ASN, fraud, Pulse UI) — see [satellite-packages.md](satellite-packages.md).
-
 ## Refactoring notes (post v4.0)
 
 | Change | Action required |

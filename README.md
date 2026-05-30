@@ -295,7 +295,6 @@ Public docs: [docs/README.md](docs/README.md)
 
 - [Migration guide](docs/migration-guide.md) — upgrades and breaking changes
 - [vs alternatives](docs/vs-alternatives.md) — comparison with other packages
-- [Satellite packages](docs/satellite-packages.md) — ASN, fraud, Pulse UI (planned)
 
 ## Development
 

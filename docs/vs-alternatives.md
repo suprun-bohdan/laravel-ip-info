@@ -43,4 +43,4 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 - Choose **laravel-ip-info** when country code + client IP correctness + Laravel DX (fake, middleware, diagnose) matter most.
 - Choose **torann/geoip** or **stevebauman/location** when you need full geocoder-style location objects in core.
 
-See [satellite-packages.md](satellite-packages.md) for planned fraud/VPN extensions outside core.
+Advanced fraud/VPN signals and ASN lookup are available in core from v4.3+ via threat intel, WHOIS, and optional HTTP enrichment — see the main README.

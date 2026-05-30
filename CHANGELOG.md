@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-05-30
+
+### Added
+
+- `php artisan ip-info:sync` — application integration audit (`--json`, `--fix`, `--publish-config`, `--publish-middleware`, `--check-routes`, `--force`).
+- `routes.middleware` config / `IP_INFO_ROUTE_MIDDLEWARE` for opt-in route protection.
+- `@ip-info-stub-version` markers for version-aware published file comparison.
+- Sync layer: `IpInfoSyncInspector`, `IpInfoSyncFixer`, `HealthChecker` (shared with diagnose).
+- `CidrMatcher`, `IpProviderResolver`, `MutableIpProviderResolver`, `ProviderStatus`.
+- `ChainProvider::lookupMany()` batch chain resolution.
+
 ### Changed
 
 - **Refactor:** `IpInfoManager` injects `IpProviderResolver` instead of calling `app(IpProvider::class)`.
@@ -14,24 +25,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Security:** HTTP providers reject insecure `http://` URLs unless `http.allow_insecure=true`. Default driver is `ipinfo` (HTTPS).
 - **Testing:** `IpInfo::fake()` bypasses positive/negative cache and skips cache writes.
 - **DX:** `IpPrivacyPolicy` owns logging policy; `IpInfoResult::shouldLog()` deprecated.
-- **Fix:** `ip-info.pulse.enabled=false` disables Pulse recorder registration.
-- **Fix:** `ip-info:install --preset` documents that runtime preset must be persisted manually.
-
-### Added
-
-- `php artisan ip-info:sync` — application integration audit (`--json`, `--fix`, `--publish-config`, `--publish-middleware`, `--check-routes`, `--force`).
-- `routes.middleware` config / `IP_INFO_ROUTE_MIDDLEWARE` for opt-in route protection.
-- `@ip-info-stub-version` markers for version-aware published file comparison.
-- Sync layer: `IpInfoSyncInspector`, `IpInfoSyncFixer`, `HealthChecker` (shared with diagnose).
-
-### Changed
-
 - `ip-info:diagnose` delegates database/MaxMind stale checks to `HealthChecker` and links to `ip-info:sync`.
 - `ip-info:starter` runs `ip-info:sync` after publish instead of hardcoded middleware instructions.
 
-- `CidrMatcher`, `IpProviderResolver`, `MutableIpProviderResolver`, `ProviderStatus`.
-- `ChainProvider::lookupMany()` batch chain resolution.
-- Tests: fake cache override, trusted proxy CIDR, URL allowlist HTTPS guard.
+### Fixed
+
+- `ip-info.pulse.enabled=false` disables Pulse recorder registration.
+- `ip-info:install --preset` documents that runtime preset must be persisted manually.
 
 ## [4.0.0] - 2026-05-30
 

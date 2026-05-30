@@ -56,7 +56,7 @@ $result = IpInfo::for($ip)->result(); // IpInfoResult DTO
 2. No timezone-to-country fallback.
 3. No direct Redis/Predis dependency — uses Laravel cache.
 4. Trusted proxy headers are **not** read unless listed in `ip-info.trusted_proxies.headers`.
-5. Offline database is IPv4-only.
+5. Legacy offline CSV (`database` provider) is IPv4-only — use `location_db` (v4.6+) for IPv6 and city fields.
 
 ### Upgrading to 2.0
 
@@ -96,6 +96,33 @@ use SuprunBohdan\IpInfo\Laravel\Database\Seeders\IpCountrySeeder;
 ```
 
 PSR-4 path: `src/Laravel/Database/Seeders/IpCountrySeeder.php`.
+
+## Upgrading to 4.6
+
+New optional offline provider **`location_db`** — no breaking changes for existing installs.
+
+1. `composer update suprun-bohdan/laravel-ip-info`
+2. Republish config if you want new keys: `php artisan vendor:publish --tag=ip-info-config`
+3. Optional — enable MMDB geo:
+
+```bash
+composer require maxmind-db/reader
+php artisan ip-info:install --with-location-db --preset=offline --force
+```
+
+Step-by-step user guide: **[offline-geo.md](offline-geo.md)**
+
+New `.env` keys (all optional):
+
+| Key | Purpose |
+|-----|---------|
+| `IP_INFO_LOCATION_DB_ENABLED` | Turn on MMDB provider |
+| `IP_INFO_LOCATION_DB_EDITION` | `country` or `city` |
+| `IP_INFO_LOCATION_DB_PATH` | Storage directory for `.mmdb` files |
+| `IP_INFO_LOCATION_DB_STALE_DAYS` | Warn in sync/diagnose when files are old |
+| `IP_INFO_PRESET=offline` | Disable HTTP; chain uses `location_db` |
+
+New helpers: `client_city()`, `request()->clientCity()`, `ip_info()->city()`, `region()`, `timezone()`, `coordinates()`.
 
 ## v2.1+ features
 
@@ -294,6 +321,8 @@ Config highlights:
 ```
 
 ## Offline location DB (4.6+)
+
+See the full **[offline geo user guide](offline-geo.md)** for install, troubleshooting, and attribution requirements.
 
 IPv4 + IPv6 geo without HTTP using [sapics/ip-location-db](https://github.com/sapics/ip-location-db) MMDB files (DB-IP Lite, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — attribute [db-ip.com](https://db-ip.com/) when displaying geo data).
 

@@ -19,12 +19,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Fluent API: `city()`, `region()`, `timezone()`, `coordinates()` on `IpInfoQuery` / `IpInfoResult`.
 - Helper `client_city()` and request macro `clientCity()`.
 - Sync/diagnose health checks for location DB staleness and missing MMDB files.
+- User guide: [docs/offline-geo.md](docs/offline-geo.md).
 
 ### Changed
 
 - Default provider chain includes `location_db` after `local`.
 - Published stub version bumped to `4.6.0`.
 - Schedule stub includes monthly `ip-info:update-location-db`.
+- README and docs index updated for offline geo workflows.
 
 ## [4.5.0] - 2026-05-30
 

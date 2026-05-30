@@ -4,12 +4,13 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 
 ## suprun-bohdan/laravel-ip-info
 
-**Best for:** Laravel-first apps that need request IP resolution, provider chains, offline CSV/MaxMind, caching, and testing fakes.
+**Best for:** Laravel-first apps that need request IP resolution, provider chains, offline MMDB/CSV/MaxMind, caching, and testing fakes.
 
 | Feature | Support |
 |---------|---------|
 | Request IP + trusted proxy presets | Yes |
-| Offline IPv4 CSV | Yes |
+| Offline IPv4 CSV (`ip_country`) | Yes |
+| **Offline MMDB IPv4 + IPv6 (v4.6+)** | **Yes** — country & city editions |
 | MaxMind GeoLite2 | Yes |
 | Provider chain + custom providers | Yes |
 | `IpInfo::fake()` testing | Yes |
@@ -18,12 +19,13 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 | HTTP circuit breaker + 429 soft-fail | Yes |
 | Geo block/allow middleware | Yes |
 | Route aliases (`geo.block`, `geo.allow`) | Yes |
-| Global helpers (`client_country()`, `ip_info()`) | Yes |
+| Global helpers (`client_country()`, `client_city()`, `ip_info()`) | Yes |
+| City / region / timezone offline (v4.6+) | Yes — `location_db` + `client_city()` |
 | Blade directives + dev components (v4.4+) | Yes |
 | IP risk score + per-reason filter responses (v4.5+) | Yes |
 | Verified crawler bypass for `ip.filter` (v4.5+) | Yes |
 | Queue batch lookup | Yes |
-| City/ASN geo in core | City via MMDB (v4.6+); ASN planned |
+| ASN geo in core | Planned (v4.7+) |
 
 ## torann/geoip
 
@@ -43,7 +45,8 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 
 ## Recommendation
 
-- Choose **laravel-ip-info** when country code + client IP correctness + Laravel DX (fake, middleware, diagnose) matter most.
-- Choose **torann/geoip** or **stevebauman/location** when you need full geocoder-style location objects in core.
+- Choose **laravel-ip-info** when client IP correctness, Laravel DX (middleware, fake, diagnose), and **offline geo including IPv6** matter most — especially with `location_db` (v4.6+).
+- Choose **torann/geoip** when you are already standardized on MaxMind GeoIP2 databases and want their location object API.
+- Choose **stevebauman/location** when you prefer many HTTP drivers out of the box and full geocoder-style DTOs over a minimal provider chain.
 
-Advanced fraud/VPN signals, WHOIS, Blade DX, and IP risk scoring are available in core from v4.3+ — see the main [README](../README.md).
+Advanced fraud/VPN signals, WHOIS, Blade DX, IP risk scoring, and offline city geo are available in core from v4.3+ / v4.6+ — see the main [README](../README.md) and [offline geo guide](offline-geo.md).

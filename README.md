@@ -16,20 +16,35 @@ composer require suprun-bohdan/laravel-ip-info
 php artisan ip-info:install --quick --register-middleware --force
 ```
 
-After install, public IP lookups work immediately via the HTTP provider (`quick_start` preset). For production, prefer MaxMind or the offline IPv4 database.
+After install, public IP lookups work immediately via the HTTP provider (`quick_start` preset).
+
+**For production**, prefer offline geo — no rate limits, no outbound HTTP:
+
+```bash
+composer require maxmind-db/reader
+php artisan ip-info:install --with-location-db --preset=offline --force
+```
+
+See [Offline geo guide](docs/offline-geo.md) for country vs city editions and IPv6.
 
 ```php
 // Helpers (v4.2+)
 $country = client_country();
 $country = client_country(default: 'XX');
+$city = client_city(); // v4.6+, city edition or when MMDB has city data
 
 // Fluent
 if (ip_info()->isCountry('UA', 'PL')) {
     // ...
 }
+$city = ip_info()->city();           // v4.6+
+$region = ip_info()->region();       // v4.6+
+$tz = ip_info()->timezone();         // v4.6+
+$coords = ip_info()->coordinates();  // v4.6+ ['lat' => ..., 'lon' => ...]
 
 // Request macros
 $country = request()->clientCountry();
+$city = request()->clientCity();     // v4.6+
 $ip = request()->clientIp();
 
 // Classic facade
@@ -248,6 +263,7 @@ Components use `ClientGeoData` and `ip_info()->threats()` only — no live WHOIS
 |------------------|---------|-------|
 | `ip_info(?string $ip = null)` | `IpInfoQuery` | Current request when `$ip` omitted |
 | `client_country(?Request $r = null, ?string $default = null)` | `?string` | Uses request memo + cache |
+| `client_city(?Request $r = null, ?string $default = null)` | `?string` | City from offline MMDB (v4.6+) |
 | `client_ip(?Request $r = null)` | `string` | Reuses middleware attribute when set |
 | `client_ip_info(?Request $r = null)` | `IpInfoResult` | Full DTO |
 | `normalize_ip(string $ip)` | `string` | Canonical IP (v4.3+) |
@@ -257,19 +273,47 @@ Components use `ClientGeoData` and `ip_info()->threats()` only — no live WHOIS
 | `client_ip_risk(?Request $r = null)` | `ClientIpRiskScore` | Weighted risk score (v4.5+) |
 | `is_verified_crawler(?string $ip = null)` | `bool` | Reverse DNS verified bot (v4.5+) |
 | `whois_lookup(string $ip, bool $force = false)` | `?WhoisRecord` | Live WHOIS lookup (v4.3+) |
+| `request()->clientCountry()` | `?string` | Macro |
+| `request()->clientCity()` | `?string` | Macro (v4.6+) |
 | `request()->ipInfo()` | `IpInfoResult` | Macro |
 | `request()->clientIpRisk()` | `ClientIpRiskScore` | Macro (v4.5+) |
 | `request()->isVerifiedCrawler()` | `bool` | Macro (v4.5+) |
 | `request()->isCountry('UA', ...)` | `bool` | Macro |
 
-Fluent on `IpInfoQuery` / `IpInfoResult`: `isCountry()`, `inCountries()`, `isEu()`, `countryOr()`, `countryOrFail()`.
+Fluent on `IpInfoQuery` / `IpInfoResult`: `isCountry()`, `inCountries()`, `isEu()`, `countryOr()`, `countryOrFail()`, `city()`, `region()`, `timezone()`, `coordinates()` (v4.6+).
+
+## Choosing a geo provider
+
+The package tries providers in order (`providers.chain`). First hit wins.
+
+| Provider | Data | IPv6 | HTTP | Best for |
+|----------|------|------|------|----------|
+| `local` | Built-in private/reserved rules | Yes | No | Always first — skips lookup for LAN IPs |
+| **`location_db`** (v4.6+) | Country or city MMDB | **Yes** | No | **Recommended production offline** |
+| `database` | Legacy CSV → `ip_country` table | No | No | Existing installs, IPv4 country only |
+| `maxmind` | GeoLite2 MMDB | Yes | No | Teams with MaxMind license |
+| `http` | ipinfo / ip-api | Yes | Yes | Dev / quick start |
+| `cleantalk` | CleanTalk API | Varies | Yes | Optional enrichment |
+
+**New projects:** use [`location_db`](docs/offline-geo.md) with `--preset=offline`.  
+**Legacy projects:** keep `database` enabled; add `location_db` ahead of it in the chain for IPv6 and city.
+
+```env
+# Dev — instant geo via HTTP
+IP_INFO_PRESET=quick_start
+
+# Production — offline MMDB, no outbound geo HTTP
+IP_INFO_PRESET=offline
+IP_INFO_LOCATION_DB_ENABLED=true
+IP_INFO_LOCATION_DB_EDITION=country
+```
 
 ## Security model (client IP)
 
 - **Never trust `X-Forwarded-For` blindly.** Headers are read only when the remote address matches `trusted_proxies.proxy_cidrs`, unless `require_trusted_proxy_for_headers=false`.
 - **Mirror Laravel `TrustProxies`** when using `respect_laravel=true` (default).
 - **Cloudflare presets** require `IP_INFO_TRUSTED_PROXY_CIDRS`. Refresh with `ip-info:refresh-cloudflare-cidrs`.
-- **Runtime presets** — set `IP_INFO_PRESET=cloudflare|nginx_proxy|quick_start|local_only` (merged on each boot).
+- **Runtime presets** — `IP_INFO_PRESET=cloudflare|nginx_proxy|offline|quick_start|local_only` (merged on each boot).
 - **HTTP providers** use HTTPS by default. Insecure `http://` URLs require `IP_INFO_HTTP_ALLOW_INSECURE=true`.
 
 ## Testing
@@ -311,6 +355,7 @@ No demo app is committed to the repository; `docker/verify.sh` bootstraps a temp
 - Classifies public, private, localhost, link-local, and reserved addresses.
 - Resolves client IP from HTTP requests with trusted-proxy awareness.
 - Looks up country codes through a provider chain (`local`, `location_db`, `database`, `maxmind`, `http`, `cleantalk`).
+- Offline city, region, timezone, and coordinates via MMDB (`location_db`, v4.6+).
 - Caches lookups with configurable negative TTL.
 - Geo block/allow middleware, validation rules, sync/diagnose tooling.
 
@@ -351,47 +396,50 @@ Publish configuration only:
 php artisan vendor:publish --tag=ip-info-config
 ```
 
-Optional offline database:
-
-```bash
-# Legacy IPv4-only CSV (ip_country table)
-# .env: IP_INFO_DATABASE_ENABLED=true
-php artisan ip-info:install-database
-php artisan ip-info:update-database
-```
-
 ### Offline geo without HTTP (v4.6+)
 
-Download DB-IP Lite MMDB files from [sapics/ip-location-db](https://github.com/sapics/ip-location-db) (CC BY 4.0 — attribute [db-ip.com](https://db-ip.com/) when displaying geo data):
+Full user guide: **[docs/offline-geo.md](docs/offline-geo.md)**
+
+Download [DB-IP Lite](https://db-ip.com/) MMDB files via [sapics/ip-location-db](https://github.com/sapics/ip-location-db) (CC BY 4.0 — attribute db-ip.com when displaying geo data to users).
 
 ```bash
-# Country edition (IPv4 + IPv6)
+composer require maxmind-db/reader
+
+# Country — IPv4 + IPv6, smallest download
 php artisan ip-info:install --with-location-db --preset=offline --force
 
-# City edition (city, region, lat/lon, timezone)
+# City — city, region, postcode, lat/lon, timezone
 php artisan ip-info:install --with-location-db=city --preset=offline --force
 
-composer require maxmind-db/reader
+# Refresh / switch edition later
 php artisan ip-info:update-location-db --force
+php artisan ip-info:update-location-db --edition=city --force
 ```
-
-Suggested `.env`:
 
 ```env
 IP_INFO_PRESET=offline
 IP_INFO_LOCATION_DB_ENABLED=true
 IP_INFO_LOCATION_DB_EDITION=country
+IP_INFO_LOCATION_DB_STALE_DAYS=30
 ```
-
-Fluent helpers:
 
 ```php
-ip_info('8.8.8.8')->city();
 client_city();
-$request->clientCity();
+ip_info('8.8.8.8')->city();
+ip_info()->region();
+ip_info()->timezone();
+ip_info()->coordinates(); // ['lat' => float, 'lon' => float]|null
 ```
 
-Limit exported fields via `location_db.fields` in config (whitelist applied at lookup, not download).
+Limit returned fields in `config/ip-info.php` → `location_db.fields` (whitelist at lookup time).
+
+**Legacy IPv4 CSV** (still supported, separate from MMDB):
+
+```bash
+# .env: IP_INFO_DATABASE_ENABLED=true
+php artisan ip-info:install-database
+php artisan ip-info:update-database
+```
 
 Optional MaxMind GeoLite2:
 
@@ -431,7 +479,8 @@ File: `config/ip-info.php`
 | `providers.chain` | Provider order |
 | `presets` | Named proxy/provider bundles |
 | `security` | Blocked/allowed countries, response status/message |
-| `location_db` | Offline MMDB edition, storage path, field whitelist |
+| `database` | Legacy offline IPv4 CSV (`ip_country` table) |
+| `location_db` | Offline MMDB — edition, path, field whitelist (v4.6+) |
 | `maxmind` | GeoLite2 MMDB path and license key |
 | `http` | Driver (`ipinfo`, `ip-api`), HTTPS enforcement |
 | `trusted_proxies` | Header allowlist, proxy CIDRs |
@@ -471,10 +520,13 @@ File: `config/ip-info.php`
 
 ## Documentation
 
-Public docs: [docs/README.md](docs/README.md)
+Public docs: **[docs/README.md](docs/README.md)**
 
-- [Migration guide](docs/migration-guide.md) — upgrades and breaking changes
-- [vs alternatives](docs/vs-alternatives.md) — comparison with other packages
+| Guide | Description |
+|-------|-------------|
+| [Offline geo](docs/offline-geo.md) | MMDB install, `.env`, city API, updates, troubleshooting (v4.6+) |
+| [Migration guide](docs/migration-guide.md) | Upgrades and breaking changes |
+| [vs alternatives](docs/vs-alternatives.md) | Comparison with other Laravel geo packages |
 
 ## Development
 

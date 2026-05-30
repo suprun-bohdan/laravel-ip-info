@@ -1,0 +1,25 @@
+/vendor
+/composer.lock
+/.env
+/storage/logs/*.log
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/node_modules/
+/.yarn/*
+.idea/
+.vscode/
+.phpunit.result.cache
+.phpunit.cache
+*.zip
+
+# Cursor IDE and agent artifacts
+.cursor/
+.cursorignore
+.cursorindexingignore
+.cursorrules
+*.cursorrules
+**/.cursor/
+
+# Local Docker sandbox (not part of the package release)
+/sandbox/

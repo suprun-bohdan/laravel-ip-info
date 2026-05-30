@@ -133,12 +133,35 @@ final class Ipv6IntegrationTest extends TestCase
     {
         config([
             'ip-info.database.enabled' => true,
+            'ip-info.location_db.enabled' => false,
             'ip-info.http.enabled' => false,
             'ip-info.maxmind.enabled' => false,
             'ip-info.cleantalk.enabled' => false,
         ]);
 
         $this->assertNull(IpInfo::for(self::PUBLIC_IPV6)->countryCode());
+    }
+
+    public function test_location_db_provider_resolves_public_ipv6(): void
+    {
+        config([
+            'ip-info.location_db.enabled' => true,
+            'ip-info.providers.chain' => ['location_db', 'null'],
+            'ip-info.database.enabled' => false,
+            'ip-info.http.enabled' => false,
+            'ip-info.maxmind.enabled' => false,
+        ]);
+
+        $pool = \Mockery::mock(\SuprunBohdan\IpInfo\LocationDb\MmdbReaderPool::class);
+        $pool->shouldReceive('lookup')
+            ->once()
+            ->with(self::PUBLIC_IPV6)
+            ->andReturn(['country_code' => 'US']);
+
+        $this->instance(\SuprunBohdan\IpInfo\LocationDb\MmdbReaderPool::class, $pool);
+        $this->app->forgetInstance('ip-info');
+
+        $this->assertSame('US', IpInfo::for(self::PUBLIC_IPV6)->countryCode());
     }
 
     public function test_cloudflare_ipv6_proxy_cidr_is_recognized(): void

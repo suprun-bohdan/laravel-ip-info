@@ -52,6 +52,15 @@ if (! function_exists('client_country')) {
     }
 }
 
+if (! function_exists('client_city')) {
+    function client_city(?Request $request = null, ?string $default = null): ?string
+    {
+        $city = client_ip_info($request)->city();
+
+        return $city ?? $default;
+    }
+}
+
 if (! function_exists('client_ip')) {
     function client_ip(?Request $request = null): string
     {

@@ -40,6 +40,7 @@ use SuprunBohdan\IpInfo\Laravel\Console\ScheduleStubPublisher;
 use SuprunBohdan\IpInfo\Laravel\Console\StarterKitCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\SyncCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\UpdateDatabaseCommand;
+use SuprunBohdan\IpInfo\Laravel\Console\UpdateLocationDbCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\UpdateMaxMindCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\WhoisLookupCommand;
 use SuprunBohdan\IpInfo\Laravel\Database\LaravelSchemaInspector;
@@ -70,6 +71,7 @@ use SuprunBohdan\IpInfo\Providers\CleanTalkProvider;
 use SuprunBohdan\IpInfo\Providers\DatabaseRangeProvider;
 use SuprunBohdan\IpInfo\Providers\HttpIpProvider;
 use SuprunBohdan\IpInfo\Providers\LocalProvider;
+use SuprunBohdan\IpInfo\Providers\LocationDbProvider;
 use SuprunBohdan\IpInfo\Providers\MaxMindProvider;
 use SuprunBohdan\IpInfo\Providers\MutableIpProviderResolver;
 use SuprunBohdan\IpInfo\Providers\NullProvider;
@@ -90,6 +92,10 @@ use SuprunBohdan\IpInfo\Intel\FilterBlockResponseResolver;
 use SuprunBohdan\IpInfo\Intel\VerifiedCrawlerInspector;
 use SuprunBohdan\IpInfo\Laravel\Events\IpInfoBuildingChain;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\BlockCountries;
+use SuprunBohdan\IpInfo\LocationDb\LocationDbCatalog;
+use SuprunBohdan\IpInfo\LocationDb\LocationDbDownloader;
+use SuprunBohdan\IpInfo\LocationDb\MmdbReaderPool;
+use SuprunBohdan\IpInfo\LocationDb\MmdbRecordMapper;
 use SuprunBohdan\IpInfo\Logging\ClientIpLogger;
 use SuprunBohdan\IpInfo\Support\RequestProxyInspector;
 
@@ -124,6 +130,10 @@ final class IpInfoServiceProvider extends ServiceProvider
                 $repository,
             );
         });
+        $this->app->singleton(LocationDbCatalog::class);
+        $this->app->singleton(LocationDbDownloader::class);
+        $this->app->singleton(MmdbRecordMapper::class);
+        $this->app->singleton(MmdbReaderPool::class);
         $this->app->singleton(ClientIpLogger::class);
         $this->app->singleton(StringIpResolver::class);
         $this->app->singleton(RequestIpResolver::class);
@@ -270,6 +280,7 @@ final class IpInfoServiceProvider extends ServiceProvider
                 InstallCommand::class,
                 InstallDatabaseCommand::class,
                 UpdateDatabaseCommand::class,
+                UpdateLocationDbCommand::class,
                 UpdateMaxMindCommand::class,
                 DiagnoseIpCommand::class,
                 StarterKitCommand::class,
@@ -324,6 +335,7 @@ final class IpInfoServiceProvider extends ServiceProvider
     {
         $map = [
             'local' => LocalProvider::class,
+            'location_db' => LocationDbProvider::class,
             'database' => DatabaseRangeProvider::class,
             'maxmind' => MaxMindProvider::class,
             'http' => HttpIpProvider::class,

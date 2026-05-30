@@ -1,6 +1,6 @@
 <?php
 
-// @ip-info-stub-version 4.5.0
+// @ip-info-stub-version 4.6.0
 
 declare(strict_types=1);
 
@@ -35,7 +35,7 @@ return [
     */
     'providers' => [
         'default' => 'chain',
-        'chain' => ['local', 'database', 'maxmind', 'http', 'cleantalk'],
+        'chain' => ['local', 'location_db', 'database', 'maxmind', 'http', 'cleantalk'],
         'custom' => [],
     ],
 
@@ -86,7 +86,18 @@ return [
             ],
             'cleantalk' => ['enabled' => false],
             'database' => ['enabled' => false],
+            'location_db' => ['enabled' => false],
             'maxmind' => ['enabled' => false],
+        ],
+        'offline' => [
+            'providers' => [
+                'chain' => ['local', 'location_db', 'null'],
+            ],
+            'location_db' => ['enabled' => true],
+            'cleantalk' => ['enabled' => false],
+            'database' => ['enabled' => false],
+            'maxmind' => ['enabled' => false],
+            'http' => ['enabled' => false],
         ],
     ],
 
@@ -128,6 +139,32 @@ return [
     'database' => [
         'enabled' => env('IP_INFO_DATABASE_ENABLED', false),
         'stale_days' => (int) env('IP_INFO_DATABASE_STALE_DAYS', 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Offline ip-location-db MMDB (IPv4 + IPv6, v4.6+)
+    |--------------------------------------------------------------------------
+    */
+    'location_db' => [
+        'enabled' => env('IP_INFO_LOCATION_DB_ENABLED', false),
+        'edition' => env('IP_INFO_LOCATION_DB_EDITION', 'country'),
+        'storage_dir' => env('IP_INFO_LOCATION_DB_PATH', storage_path('app/ip-info/location-db')),
+        'stale_days' => (int) env('IP_INFO_LOCATION_DB_STALE_DAYS', 30),
+        'source' => env('IP_INFO_LOCATION_DB_SOURCE', 'dbip'),
+        'fields' => ['country', 'city', 'region', 'postcode', 'latitude', 'longitude', 'timezone'],
+        'sources' => [
+            'dbip' => [
+                'country' => [
+                    'ipv4' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/dbip-country-mmdb/dbip-country-ipv4.mmdb',
+                    'ipv6' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/dbip-country-mmdb/dbip-country-ipv6.mmdb',
+                ],
+                'city' => [
+                    'ipv4' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/dbip-city-mmdb/dbip-city-ipv4.mmdb',
+                    'ipv6' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/dbip-city-mmdb/dbip-city-ipv6.mmdb',
+                ],
+            ],
+        ],
     ],
 
     /*

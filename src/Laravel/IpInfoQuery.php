@@ -142,4 +142,27 @@ final class IpInfoQuery
     {
         return $this->result()->countryOrFail($message);
     }
+
+    public function city(): ?string
+    {
+        return $this->result()->city();
+    }
+
+    public function region(): ?string
+    {
+        return $this->result()->region();
+    }
+
+    public function timezone(): ?string
+    {
+        return $this->result()->timezone();
+    }
+
+    /**
+     * @return array{lat: float, lon: float}|null
+     */
+    public function coordinates(): ?array
+    {
+        return $this->result()->coordinates();
+    }
 }

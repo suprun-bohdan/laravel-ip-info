@@ -29,6 +29,7 @@ abstract class TestCase extends OrchestraTestCase
         $app['config']->set('ip-info.cache.enabled', true);
         $app['config']->set('ip-info.cache.store', 'array');
         $app['config']->set('ip-info.database.enabled', false);
+        $app['config']->set('ip-info.location_db.enabled', false);
         $app['config']->set('ip-info.cleantalk.enabled', false);
         $app['config']->set('ip-info.routes.enabled', false);
         $app['config']->set('ip-info.trusted_proxies.headers', []);

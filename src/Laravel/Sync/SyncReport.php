@@ -25,6 +25,10 @@ final readonly class SyncReport
         public bool $databaseEnabled,
         public bool $databaseStale,
         public string $databaseTable,
+        public bool $locationDbEnabled,
+        public bool $locationDbStale,
+        public bool $locationDbInstalled,
+        public string $locationDbEdition,
         public bool $maxmindEnabled,
         public bool $maxmindStale,
         public bool $maxmindInstalled,
@@ -66,6 +70,12 @@ final readonly class SyncReport
                 'enabled' => $this->databaseEnabled,
                 'stale' => $this->databaseStale,
                 'table' => $this->databaseTable,
+            ],
+            'location_db' => [
+                'enabled' => $this->locationDbEnabled,
+                'edition' => $this->locationDbEdition,
+                'stale' => $this->locationDbStale,
+                'installed' => $this->locationDbInstalled,
             ],
             'maxmind' => [
                 'enabled' => $this->maxmindEnabled,

@@ -310,7 +310,7 @@ No demo app is committed to the repository; `docker/verify.sh` bootstraps a temp
 - Normalizes and validates IPv4/IPv6 input.
 - Classifies public, private, localhost, link-local, and reserved addresses.
 - Resolves client IP from HTTP requests with trusted-proxy awareness.
-- Looks up country codes through a provider chain (`local`, `database`, `maxmind`, `http`, `cleantalk`).
+- Looks up country codes through a provider chain (`local`, `location_db`, `database`, `maxmind`, `http`, `cleantalk`).
 - Caches lookups with configurable negative TTL.
 - Geo block/allow middleware, validation rules, sync/diagnose tooling.
 
@@ -319,8 +319,8 @@ No demo app is committed to the repository; `docker/verify.sh` bootstraps a temp
 - PHP ^8.2
 - Laravel ^10, ^11, or ^12
 - Laravel cache (array, file, redis, etc.)
-- Database optional (offline IPv4 lookup)
-- `maxmind-db/reader` optional (MaxMind GeoLite2)
+- Database optional (legacy offline IPv4 CSV lookup)
+- `maxmind-db/reader` optional (MaxMind GeoLite2 and ip-location-db MMDB)
 
 ## Installation options
 
@@ -334,6 +334,10 @@ php artisan ip-info:install --quick
 php artisan ip-info:install --preset=cloudflare
 php artisan ip-info:install --preset=nginx_proxy
 php artisan ip-info:install --with-database
+
+# Offline geo without HTTP (IPv4 + IPv6, country or city)
+php artisan ip-info:install --with-location-db --preset=offline --force
+php artisan ip-info:install --with-location-db=city --preset=offline --force
 
 # Optional automation
 php artisan ip-info:install --register-middleware --force
@@ -350,10 +354,44 @@ php artisan vendor:publish --tag=ip-info-config
 Optional offline database:
 
 ```bash
+# Legacy IPv4-only CSV (ip_country table)
 # .env: IP_INFO_DATABASE_ENABLED=true
 php artisan ip-info:install-database
 php artisan ip-info:update-database
 ```
+
+### Offline geo without HTTP (v4.6+)
+
+Download DB-IP Lite MMDB files from [sapics/ip-location-db](https://github.com/sapics/ip-location-db) (CC BY 4.0 — attribute [db-ip.com](https://db-ip.com/) when displaying geo data):
+
+```bash
+# Country edition (IPv4 + IPv6)
+php artisan ip-info:install --with-location-db --preset=offline --force
+
+# City edition (city, region, lat/lon, timezone)
+php artisan ip-info:install --with-location-db=city --preset=offline --force
+
+composer require maxmind-db/reader
+php artisan ip-info:update-location-db --force
+```
+
+Suggested `.env`:
+
+```env
+IP_INFO_PRESET=offline
+IP_INFO_LOCATION_DB_ENABLED=true
+IP_INFO_LOCATION_DB_EDITION=country
+```
+
+Fluent helpers:
+
+```php
+ip_info('8.8.8.8')->city();
+client_city();
+$request->clientCity();
+```
+
+Limit exported fields via `location_db.fields` in config (whitelist applied at lookup, not download).
 
 Optional MaxMind GeoLite2:
 
@@ -388,11 +426,12 @@ File: `config/ip-info.php`
 
 | Section | Purpose |
 |---------|---------|
-| `active_preset` / `IP_INFO_PRESET` | Runtime preset merge (`cloudflare`, `quick_start`, …) |
+| `active_preset` / `IP_INFO_PRESET` | Runtime preset merge (`cloudflare`, `offline`, `quick_start`, …) |
 | `cache` | TTL, negative cache, prefix, tenant prefix |
 | `providers.chain` | Provider order |
 | `presets` | Named proxy/provider bundles |
 | `security` | Blocked/allowed countries, response status/message |
+| `location_db` | Offline MMDB edition, storage path, field whitelist |
 | `maxmind` | GeoLite2 MMDB path and license key |
 | `http` | Driver (`ipinfo`, `ip-api`), HTTPS enforcement |
 | `trusted_proxies` | Header allowlist, proxy CIDRs |
@@ -407,12 +446,16 @@ File: `config/ip-info.php`
 | `ip-info:install --quick` | Enable HTTP geo (`quick_start` preset) |
 | `ip-info:install --register-middleware` | Register `ResolveClientIp` (opt-in) |
 | `ip-info:install --with-schedule` | Append update stubs to `routes/console.php` |
+| `ip-info:install --with-location-db` | Download country MMDB (IPv4 + IPv6) |
+| `ip-info:install --with-location-db=city` | Download city MMDB edition |
+| `ip-info:install --preset=offline` | Chain without HTTP (`location_db`) |
 | `ip-info:refresh-cloudflare-cidrs` | Fetch Cloudflare egress CIDRs for `.env` |
 | `ip-info:sync` | Audit integration (config, middleware, routes, security) |
 | `ip-info:diagnose` | Provider health + optional IP lookup |
 | `ip-info:about` | Capability matrix (preset, helpers, aliases) |
 | `ip-info:starter` | Publish middleware + install bundle |
 | `ip-info:update-database` | Refresh offline IPv4 CSV |
+| `ip-info:update-location-db` | Download ip-location-db MMDB files |
 | `ip-info:update-maxmind` | Download GeoLite2-Country MMDB |
 
 ## Architecture

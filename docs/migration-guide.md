@@ -85,7 +85,7 @@ $result = IpInfo::for($ip)->result(); // IpInfoResult DTO
 ### 1.3
 
 - Documentation and DX improvements (README, migration guide, dev sandbox notes).
-- IPv6 offline DB and additional HTTP providers remain planned for future releases.
+- IPv6 offline geo via MMDB (`location_db` provider, v4.6+); legacy `ip_country` CSV remains IPv4-only.
 
 ## Seeder namespace (1.1.1 fix)
 
@@ -292,6 +292,57 @@ Config highlights:
 'risk' => ['weights' => [...], 'thresholds' => ['medium' => 30, 'high' => 60]],
 'verified_crawlers' => ['enabled' => true, 'skip_filtering' => true],
 ```
+
+## Offline location DB (4.6+)
+
+IPv4 + IPv6 geo without HTTP using [sapics/ip-location-db](https://github.com/sapics/ip-location-db) MMDB files (DB-IP Lite, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) — attribute [db-ip.com](https://db-ip.com/) when displaying geo data).
+
+```bash
+composer require maxmind-db/reader
+
+# Country edition
+php artisan ip-info:install --with-location-db --preset=offline --force
+
+# City edition (city, region, lat/lon, timezone)
+php artisan ip-info:install --with-location-db=city --preset=offline --force
+
+php artisan ip-info:update-location-db --force
+```
+
+`.env`:
+
+```env
+IP_INFO_PRESET=offline
+IP_INFO_LOCATION_DB_ENABLED=true
+IP_INFO_LOCATION_DB_EDITION=country
+IP_INFO_LOCATION_DB_STALE_DAYS=30
+```
+
+Config highlights:
+
+```php
+'location_db' => [
+    'enabled' => true,
+    'edition' => 'country', // or city
+    'fields' => ['country', 'city', 'region', 'postcode', 'latitude', 'longitude', 'timezone'],
+],
+'providers' => [
+    'chain' => ['local', 'location_db', 'database', 'maxmind', 'http', 'cleantalk'],
+],
+```
+
+API:
+
+```php
+ip_info($ip)->city();
+ip_info($ip)->region();
+ip_info($ip)->timezone();
+ip_info($ip)->coordinates();
+client_city();
+$request->clientCity();
+```
+
+Legacy `ip_country` SQL seed and `@country` Blade directives are unchanged. Use `location_db` for IPv6 and city-level fields.
 
 ## Verification checklist
 

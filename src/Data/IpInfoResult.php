@@ -82,6 +82,29 @@ final readonly class IpInfoResult implements JsonSerializable
         return $country;
     }
 
+    public function city(): ?string
+    {
+        return $this->geo->city;
+    }
+
+    public function region(): ?string
+    {
+        return $this->geo->region;
+    }
+
+    public function timezone(): ?string
+    {
+        return $this->geo->timezone;
+    }
+
+    /**
+     * @return array{lat: float, lon: float}|null
+     */
+    public function coordinates(): ?array
+    {
+        return $this->geo->coordinates();
+    }
+
     /**
      * @deprecated Use {@see IpPrivacyPolicy::shouldLog()} instead.
      */
@@ -168,6 +191,13 @@ final readonly class IpInfoResult implements JsonSerializable
      *     is_public: bool,
      *     is_private: bool,
      *     provider: ?string,
+     *     city: ?string,
+     *     region: ?string,
+     *     region2: ?string,
+     *     postcode: ?string,
+     *     latitude: ?float,
+     *     longitude: ?float,
+     *     timezone: ?string,
      *     threats: ?array{
      *         tor: ?bool,
      *         proxy: ?bool,
@@ -188,6 +218,13 @@ final readonly class IpInfoResult implements JsonSerializable
             'is_public' => $this->isPublic,
             'is_private' => $this->isPrivate,
             'provider' => $this->provider,
+            'city' => $this->geo->city,
+            'region' => $this->geo->region,
+            'region2' => $this->geo->region2,
+            'postcode' => $this->geo->postcode,
+            'latitude' => $this->geo->latitude,
+            'longitude' => $this->geo->longitude,
+            'timezone' => $this->geo->timezone,
             'threats' => $this->threats?->toArray(),
         ];
     }
@@ -202,6 +239,13 @@ final readonly class IpInfoResult implements JsonSerializable
      *     is_public: bool,
      *     is_private: bool,
      *     provider: ?string,
+     *     city: ?string,
+     *     region: ?string,
+     *     region2: ?string,
+     *     postcode: ?string,
+     *     latitude: ?float,
+     *     longitude: ?float,
+     *     timezone: ?string,
      *     threats: ?array{
      *         tor: ?bool,
      *         proxy: ?bool,

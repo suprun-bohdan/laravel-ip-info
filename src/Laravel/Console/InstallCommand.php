@@ -11,9 +11,10 @@ use SuprunBohdan\IpInfo\Laravel\Support\PresetConfigurator;
 final class InstallCommand extends Command
 {
     protected $signature = 'ip-info:install
-                            {--preset= : Apply a named preset (cloudflare, nginx_proxy, local_only, quick_start)}
+                            {--preset= : Apply a named preset (cloudflare, nginx_proxy, local_only, offline, quick_start)}
                             {--quick : Enable HTTP geo via quick_start preset}
                             {--with-database : Download and seed the offline IPv4 database}
+                            {--with-location-db=* : Download offline MMDB edition (country or city)}
                             {--with-schedule : Append update schedule stubs to routes/console.php}
                             {--register-middleware : Register ResolveClientIp middleware in bootstrap/app.php or Kernel.php}
                             {--with-blade : Publish Blade component views and CSS (tag ip-info-blade)}
@@ -54,6 +55,33 @@ final class InstallCommand extends Command
 
         if ($this->option('with-database')) {
             $this->call('ip-info:install-database');
+        }
+
+        $locationDb = $this->option('with-location-db');
+        $edition = $this->resolveLocationDbEdition($locationDb);
+
+        if ($edition !== null) {
+            if (! in_array($edition, ['country', 'city'], true)) {
+                $this->error('Location DB edition must be country or city.');
+
+                return self::FAILURE;
+            }
+
+            config([
+                'ip-info.location_db.enabled' => true,
+                'ip-info.location_db.edition' => $edition,
+            ]);
+
+            $exitCode = $this->call('ip-info:update-location-db', [
+                '--edition' => $edition,
+                '--force' => (bool) $this->option('force'),
+            ]);
+
+            if ($exitCode !== self::SUCCESS) {
+                return $exitCode;
+            }
+
+            $this->printLocationDbEnvSnippet($edition);
         }
 
         if ($this->option('with-schedule')) {
@@ -100,6 +128,44 @@ final class InstallCommand extends Command
         $this->line('IP_INFO_PRESET=quick_start');
         $this->line('IP_INFO_HTTP_ENABLED=true');
         $this->line('IP_INFO_HTTP_DRIVER=ipinfo');
-        $this->warn('Public HTTP lookups are subject to provider rate limits. Use MaxMind or offline DB in production.');
+        $this->warn('Public HTTP lookups are subject to provider rate limits. Use offline location DB or MaxMind in production.');
+    }
+
+    private function printLocationDbEnvSnippet(string $edition): void
+    {
+        $this->newLine();
+        $this->line('Suggested .env entries for offline location DB:');
+        $this->line('IP_INFO_PRESET=offline');
+        $this->line('IP_INFO_LOCATION_DB_ENABLED=true');
+        $this->line('IP_INFO_LOCATION_DB_EDITION='.$edition);
+        $this->line('composer require maxmind-db/reader');
+        $this->warn('DB-IP Lite data is CC BY 4.0 — attribute https://db-ip.com/ when displaying geo data.');
+    }
+
+    private function resolveLocationDbEdition(mixed $locationDb): ?string
+    {
+        if ($locationDb === false || $locationDb === null) {
+            return null;
+        }
+
+        if (is_array($locationDb)) {
+            if ($locationDb === []) {
+                return null;
+            }
+
+            $value = $locationDb[0] ?? null;
+
+            if ($value === null || $value === true || $value === '') {
+                return 'country';
+            }
+
+            return (string) $value;
+        }
+
+        if ($locationDb === true || $locationDb === '') {
+            return 'country';
+        }
+
+        return (string) $locationDb;
     }
 }

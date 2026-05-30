@@ -11,6 +11,13 @@ final readonly class GeoLocation
         public ?string $countryName = null,
         public ?string $continent = null,
         public ?bool $isEu = null,
+        public ?string $city = null,
+        public ?string $region = null,
+        public ?string $region2 = null,
+        public ?string $postcode = null,
+        public ?float $latitude = null,
+        public ?float $longitude = null,
+        public ?string $timezone = null,
     ) {}
 
     public static function fromCountryCode(?string $countryCode): self
@@ -39,5 +46,20 @@ final readonly class GeoLocation
         }
 
         return $this->countryCode;
+    }
+
+    /**
+     * @return array{lat: float, lon: float}|null
+     */
+    public function coordinates(): ?array
+    {
+        if ($this->latitude === null || $this->longitude === null) {
+            return null;
+        }
+
+        return [
+            'lat' => $this->latitude,
+            'lon' => $this->longitude,
+        ];
     }
 }

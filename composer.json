@@ -64,7 +64,7 @@
     "ext-redis": "Required when using the redis cache store",
     "ext-phar": "Required for ip-info:update-maxmind archive extraction",
     "illuminate/database": "Required for DatabaseRangeProvider offline IPv4 lookup",
-    "maxmind-db/reader": "Required for MaxMindProvider GeoLite2 lookups",
+    "maxmind-db/reader": "Required for MaxMindProvider and LocationDbProvider MMDB lookups",
     "laravel/pulse": "Optional Laravel Pulse metrics via IpInfoRecorder",
     "nyholm/psr7": "PSR-17 factories when binding PSR-18 ClientInterface manually"
   },

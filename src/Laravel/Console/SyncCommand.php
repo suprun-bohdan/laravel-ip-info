@@ -85,6 +85,7 @@ final class SyncCommand extends Command
             ['Middleware registered', $report->middlewareRegistered, 'detect-only; see snippets below'],
             ['Routes', $report->routesStatus->value, ($report->routesEnabled ? 'enabled' : 'disabled').' '.$report->routesPath],
             ['Database', $report->databaseEnabled ? ($report->databaseStale ? 'stale' : 'ok') : 'disabled', 'table: '.$report->databaseTable],
+            ['Location DB', $report->locationDbEnabled ? ($report->locationDbStale ? 'stale' : 'ok') : 'disabled', 'edition: '.$report->locationDbEdition.', installed: '.($report->locationDbInstalled ? 'yes' : 'no')],
             ['MaxMind', $report->maxmindEnabled ? ($report->maxmindStale ? 'stale' : 'ok') : 'disabled', 'installed: '.($report->maxmindInstalled ? 'yes' : 'no')],
             ['Overall', $report->healthy ? 'healthy' : 'needs attention', ''],
         ]);

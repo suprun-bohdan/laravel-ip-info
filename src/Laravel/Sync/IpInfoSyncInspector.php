@@ -33,6 +33,11 @@ final class IpInfoSyncInspector
         $databaseStale = $this->healthChecker->databaseIsStale();
         $databaseTable = $this->healthChecker->ipCountryTablePresent() ? 'present' : 'missing';
 
+        $locationDbEnabled = (bool) config('ip-info.location_db.enabled', false);
+        $locationDbStale = $this->healthChecker->locationDbIsStale();
+        $locationDbInstalled = $this->healthChecker->locationDbIsReadable();
+        $locationDbEdition = (string) config('ip-info.location_db.edition', 'country');
+
         $maxmindEnabled = (bool) config('ip-info.maxmind.enabled', false);
         $maxmindStale = $this->healthChecker->maxmindIsStale();
         $maxmindInstalled = $this->healthChecker->maxmindIsReadable();
@@ -53,6 +58,8 @@ final class IpInfoSyncInspector
             $middlewareRegistered,
             $databaseEnabled,
             $databaseStale,
+            $locationDbEnabled,
+            $locationDbStale,
             $maxmindEnabled,
             $maxmindStale,
             $trustedHeadersWithoutProxyCidrs,
@@ -84,6 +91,10 @@ final class IpInfoSyncInspector
             databaseEnabled: $databaseEnabled,
             databaseStale: $databaseStale,
             databaseTable: $databaseTable,
+            locationDbEnabled: $locationDbEnabled,
+            locationDbStale: $locationDbStale,
+            locationDbInstalled: $locationDbInstalled,
+            locationDbEdition: $locationDbEdition,
             maxmindEnabled: $maxmindEnabled,
             maxmindStale: $maxmindStale,
             maxmindInstalled: $maxmindInstalled,
@@ -183,6 +194,8 @@ final class IpInfoSyncInspector
         string $middlewareRegistered,
         bool $databaseEnabled,
         bool $databaseStale,
+        bool $locationDbEnabled,
+        bool $locationDbStale,
         bool $maxmindEnabled,
         bool $maxmindStale,
         bool $trustedHeadersWithoutProxyCidrs,
@@ -215,6 +228,10 @@ final class IpInfoSyncInspector
             $actions[] = 'Refresh offline database: php artisan ip-info:update-database';
         }
 
+        if ($locationDbEnabled && $locationDbStale) {
+            $actions[] = 'Refresh location DB MMDB: php artisan ip-info:update-location-db --force';
+        }
+
         if ($maxmindEnabled && $maxmindStale) {
             $actions[] = 'Refresh MaxMind database: php artisan ip-info:update-maxmind';
         }
@@ -225,7 +242,7 @@ final class IpInfoSyncInspector
         }
 
         if ($this->hasNoGeoProvidersEnabled()) {
-            $actions[] = 'Enable geo lookup: php artisan ip-info:install --quick or enable MaxMind/offline DB';
+            $actions[] = 'Enable geo lookup: php artisan ip-info:install --quick or --with-location-db --preset=offline';
         }
 
         if ($this->scheduleStubsMissing()) {
@@ -253,6 +270,7 @@ final class IpInfoSyncInspector
     private function hasNoGeoProvidersEnabled(): bool
     {
         return ! config('ip-info.database.enabled', false)
+            && ! config('ip-info.location_db.enabled', false)
             && ! config('ip-info.maxmind.enabled', false)
             && ! config('ip-info.http.enabled', false)
             && ! config('ip-info.cleantalk.enabled', false);

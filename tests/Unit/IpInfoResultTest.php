@@ -30,6 +30,13 @@ final class IpInfoResultTest extends TestCase
             'is_public' => true,
             'is_private' => false,
             'provider' => 'database',
+            'city' => null,
+            'region' => null,
+            'region2' => null,
+            'postcode' => null,
+            'latitude' => null,
+            'longitude' => null,
+            'timezone' => null,
             'threats' => null,
         ];
 

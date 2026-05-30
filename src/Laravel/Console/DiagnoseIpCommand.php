@@ -27,6 +27,7 @@ final class DiagnoseIpCommand extends Command
     public function handle(IpInfoManager $ipInfo): int
     {
         $databaseStale = $this->healthChecker->databaseIsStale();
+        $locationDbStale = $this->healthChecker->locationDbIsStale();
         $maxmindStale = $this->healthChecker->maxmindIsStale();
         $maxmindReadable = $this->healthChecker->maxmindIsReadable();
         $driver = (string) config('ip-info.http.driver', 'ip-api');
@@ -38,6 +39,10 @@ final class DiagnoseIpCommand extends Command
             'cache.negative_ttl' => (int) config('ip-info.cache.negative_ttl', 300),
             'database.enabled' => (bool) config('ip-info.database.enabled'),
             'database.stale' => $databaseStale,
+            'location_db.enabled' => (bool) config('ip-info.location_db.enabled'),
+            'location_db.edition' => (string) config('ip-info.location_db.edition', 'country'),
+            'location_db.stale' => $locationDbStale,
+            'location_db.readable' => $this->healthChecker->locationDbIsReadable(),
             'maxmind.enabled' => (bool) config('ip-info.maxmind.enabled'),
             'maxmind.stale' => $maxmindStale,
             'maxmind.readable' => $maxmindReadable,
@@ -80,6 +85,10 @@ final class DiagnoseIpCommand extends Command
 
         if ($databaseStale) {
             $this->warn('Offline database CSV is missing or stale. Run ip-info:update-database.');
+        }
+
+        if ($locationDbStale) {
+            $this->warn('Location DB MMDB is missing or stale. Run ip-info:update-location-db --force.');
         }
 
         if ($maxmindStale) {

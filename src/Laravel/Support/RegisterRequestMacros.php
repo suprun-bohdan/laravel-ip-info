@@ -30,6 +30,11 @@ final class RegisterRequestMacros
             return client_country($this, $default);
         });
 
+        Request::macro('clientCity', function (?string $default = null): ?string {
+            /** @var Request $this */
+            return client_city($this, $default);
+        });
+
         Request::macro('clientIp', function (): string {
             /** @var Request $this */
             return client_ip($this);

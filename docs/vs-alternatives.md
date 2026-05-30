@@ -23,7 +23,7 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 | IP risk score + per-reason filter responses (v4.5+) | Yes |
 | Verified crawler bypass for `ip.filter` (v4.5+) | Yes |
 | Queue batch lookup | Yes |
-| City/ASN geo in core | No (satellite packages) |
+| City/ASN geo in core | City via MMDB (v4.6+); ASN planned |
 
 ## torann/geoip
 

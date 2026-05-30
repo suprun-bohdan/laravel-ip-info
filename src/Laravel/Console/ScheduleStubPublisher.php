@@ -11,6 +11,7 @@ final class ScheduleStubPublisher
     private const STUB = <<<'PHP'
 // Laravel IP Info — scheduled database updates
 Schedule::weekly()->command('ip-info:update-database');
+Schedule::monthly()->command('ip-info:update-location-db');
 Schedule::weekly()->command('ip-info:update-maxmind');
 Schedule::weekly()->command('ip-info:refresh-cloudflare-cidrs');
 

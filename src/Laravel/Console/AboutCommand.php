@@ -26,6 +26,9 @@ final class AboutCommand extends Command
             ['Blade publish tag', 'ip-info-blade (CSS + component views)'],
             ['Cache', config('ip-info.cache.enabled') ? 'enabled' : 'disabled'],
             ['Database provider', config('ip-info.database.enabled') ? 'enabled' : 'disabled'],
+            ['Location DB provider', config('ip-info.location_db.enabled')
+                ? 'enabled ('.config('ip-info.location_db.edition', 'country').')'
+                : 'disabled'],
             ['MaxMind provider', config('ip-info.maxmind.enabled') ? 'enabled' : 'disabled'],
             ['HTTP provider', config('ip-info.http.enabled') ? 'enabled ('.$driver.')' : 'disabled'],
             ['HTTP circuit open', $circuitBreaker->isOpen('http:'.$driver) ? 'yes' : 'no'],
@@ -37,7 +40,8 @@ final class AboutCommand extends Command
 
         $this->table(['Setting', 'Value'], $rows);
         $this->newLine();
-        $this->line('Presets: cloudflare, cloudflare_strict, nginx_proxy, local_only, quick_start');
+        $this->line('Presets: cloudflare, cloudflare_strict, nginx_proxy, local_only, offline, quick_start');
+        $this->line('Location DB update: php artisan ip-info:update-location-db');
 
         return self::SUCCESS;
     }

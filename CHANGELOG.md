@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.6.0] - 2026-05-30
+
+### Added
+
+- **Offline location DB (MMDB):** `location_db` provider via [sapics/ip-location-db](https://github.com/sapics/ip-location-db) (DB-IP Lite, CC BY 4.0).
+- IPv4 + IPv6 country and city editions; config `ip-info.location_db` with field whitelist.
+- `LocationDbCatalog`, `LocationDbDownloader`, `MmdbReaderPool`, `MmdbRecordMapper`, `LocationDbProvider`.
+- `ip-info:update-location-db {--edition=country|city} {--force}` command.
+- `ip-info:install --with-location-db` and `--with-location-db=city` flags; `offline` preset.
+- Extended `GeoLocation` with city, region, postcode, coordinates, timezone.
+- Fluent API: `city()`, `region()`, `timezone()`, `coordinates()` on `IpInfoQuery` / `IpInfoResult`.
+- Helper `client_city()` and request macro `clientCity()`.
+- Sync/diagnose health checks for location DB staleness and missing MMDB files.
+
+### Changed
+
+- Default provider chain includes `location_db` after `local`.
+- Published stub version bumped to `4.6.0`.
+- Schedule stub includes monthly `ip-info:update-location-db`.
+
 ## [4.5.0] - 2026-05-30
 
 ### Added

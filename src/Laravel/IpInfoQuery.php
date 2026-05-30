@@ -128,6 +128,11 @@ final class IpInfoQuery
         return $this->result()->isEu();
     }
 
+    public function isInContinent(string $continent): bool
+    {
+        return $this->result()->isInContinent($continent);
+    }
+
     public function countryOr(?string $default): ?string
     {
         return $this->result()->countryOr($default);

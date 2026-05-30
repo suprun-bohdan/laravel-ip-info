@@ -106,7 +106,56 @@ php artisan ip-info:whois 8.8.8.8
 
 Key env vars: `IP_INFO_WHOIS_ENABLED`, `IP_INFO_CLIENT_LOG_ENABLED`, `IP_INFO_FILTERING_ENABLED`, `IP_INFO_TOR_EXIT_CIDRS`.
 
-## Blade (v4.2+)
+## IP risk and filtering (v4.5+)
+
+Per-reason HTTP responses, risk scoring, block events, and verified crawler bypass:
+
+```php
+// Risk score (does not block by itself)
+$risk = client_ip_risk();
+$risk->score;   // 0–100
+$risk->level;   // low | medium | high
+$risk->signals; // [{reason, points}, ...]
+
+request()->clientIpRisk()->isHigh();
+is_verified_crawler(); // reverse DNS + forward confirm
+```
+
+Config (`config/ip-info.php`):
+
+```php
+'filtering' => [
+    'responses' => [
+        'tor' => ['status' => 451, 'message' => 'Tor connections are not allowed.'],
+        'default' => ['status' => 403, 'message' => 'Access denied.'],
+    ],
+    'expose_block_reason_header' => true, // X-Ip-Info-Block-Reason
+],
+'risk' => [
+    'weights' => ['tor' => 40, 'proxy' => 25, 'hosting' => 15, ...],
+    'thresholds' => ['medium' => 30, 'high' => 60],
+],
+'verified_crawlers' => [
+    'enabled' => true,
+    'skip_filtering' => true, // Googlebot etc. bypass ip.filter
+],
+```
+
+Listen for blocks:
+
+```php
+use SuprunBohdan\IpInfo\Laravel\Events\ClientIpBlocked;
+
+Event::listen(ClientIpBlocked::class, function (ClientIpBlocked $event) {
+    // $event->reason, $event->status, $event->intel
+});
+```
+
+Blade: `@highrisk` … `@endhighrisk` wraps content when risk level is high.
+
+## Blade (v4.4+)
+
+### Directives
 
 ```blade
 @country('UA', 'PL')
@@ -117,8 +166,81 @@ Key env vars: `IP_INFO_WHOIS_ENABLED`, `IP_INFO_CLIENT_LOG_ENABLED`, `IP_INFO_FI
     Hidden for Russia
 @endunlesscountry
 
+@eu
+    EU visitors only
+@endeu
+
+@continent('EU')
+    European continent
+@endcontinent
+
+@privateip
+    Local / RFC1918 client
+@endprivateip
+
+@publicip
+    Public client IP
+@endpublicip
+
+@tor
+    Tor exit detected
+@endtor
+
+@unlesstor
+    Not Tor
+@endunlesstor
+
+@proxy
+    Proxy or VPN detected
+@endproxy
+
+@unlessproxy
+    Direct connection
+@endunlessproxy
+
+@anonymous
+    Anonymous proxy signals
+@endanonymous
+
+@hosting
+    Hosting / datacenter IP
+@endhosting
+
 Country: @clientcountry('XX')
+IP: @clientip
+Anonymized: @anonymizedclientip
 ```
+
+`@geoblock('RU')` aborts when the client matches (uses `ip-info.security.*` config). For middleware-level filtering use `ip.filter` instead of duplicating abort logic in Blade.
+
+### Dev components (local / staging)
+
+Publish CSS and optional view overrides:
+
+```bash
+php artisan vendor:publish --tag=ip-info-blade
+# or during install:
+php artisan ip-info:install --with-blade
+```
+
+In your layout:
+
+```blade
+@env('local')
+    <link rel="stylesheet" href="{{ asset('vendor/ip-info/ip-info-blade.css') }}">
+    <x-ip-info::dev-banner />
+@endenv
+```
+
+| Component | Purpose |
+|-----------|---------|
+| `<x-ip-info::dev-banner />` | Country, continent, EU badge, anonymized IP, privacy/threat chips |
+| `<x-ip-info::country-gate countries="UA,PL">` | Slot content when client country matches; optional `fallback` slot |
+| `<x-ip-info::debug-panel />` | Collapsible `<details>` dump of geo, privacy, threats (no WHOIS) |
+
+Props: `dev-banner` — `showIp`, `showThreats`, `onlyPrivate`; `debug-panel` — `collapsed` (default `true`).
+
+Components use `ClientGeoData` and `ip_info()->threats()` only — no live WHOIS in views.
 
 ## Helpers reference (v4.2+)
 
@@ -132,8 +254,12 @@ Country: @clientcountry('XX')
 | `ip_privacy(?string $ip = null)` | `IpPrivacyProfile` | Private/public/reserved (v4.3+) |
 | `ip_threats(?string $ip = null)` | `IpThreatSignals` | Tor/proxy/VPN/hosting (v4.3+) |
 | `client_ip_intel(?Request $r = null, bool $withWhois = false)` | `ClientIpIntel` | Geo + privacy + threats + WHOIS (v4.3+) |
+| `client_ip_risk(?Request $r = null)` | `ClientIpRiskScore` | Weighted risk score (v4.5+) |
+| `is_verified_crawler(?string $ip = null)` | `bool` | Reverse DNS verified bot (v4.5+) |
 | `whois_lookup(string $ip, bool $force = false)` | `?WhoisRecord` | Live WHOIS lookup (v4.3+) |
 | `request()->ipInfo()` | `IpInfoResult` | Macro |
+| `request()->clientIpRisk()` | `ClientIpRiskScore` | Macro (v4.5+) |
+| `request()->isVerifiedCrawler()` | `bool` | Macro (v4.5+) |
 | `request()->isCountry('UA', ...)` | `bool` | Macro |
 
 Fluent on `IpInfoQuery` / `IpInfoResult`: `isCountry()`, `inCountries()`, `isEu()`, `countryOr()`, `countryOrFail()`.
@@ -167,6 +293,17 @@ class ExampleTest extends TestCase
 ```
 
 `IpInfo::fake()` bypasses positive/negative cache and skips cache writes during tests.
+
+### Docker verification
+
+Run the full package suite and an ephemeral Laravel 11 app (path repo) inside Docker:
+
+```bash
+make docker-test    # package PHPUnit only
+make docker-verify  # PHPUnit + Laravel integration
+```
+
+No demo app is committed to the repository; `docker/verify.sh` bootstraps a temporary app in a Docker volume.
 
 ## What this package does
 

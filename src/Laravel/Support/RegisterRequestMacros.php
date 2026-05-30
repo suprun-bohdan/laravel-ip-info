@@ -74,5 +74,15 @@ final class RegisterRequestMacros
             /** @var Request $this */
             return client_ip_intel($this, $withWhois);
         });
+
+        Request::macro('clientIpRisk', function (): \SuprunBohdan\IpInfo\Intel\ClientIpRiskScore {
+            /** @var Request $this */
+            return client_ip_risk($this);
+        });
+
+        Request::macro('isVerifiedCrawler', function (): bool {
+            /** @var Request $this */
+            return is_verified_crawler(client_ip($this));
+        });
     }
 }

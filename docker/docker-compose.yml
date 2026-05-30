@@ -1,0 +1,21 @@
+services:
+  package:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ..:/package
+    working_dir: /package
+
+  verify:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ..:/package
+      - laravel-test-app:/app
+    working_dir: /package
+    command: ["/bin/bash", "./docker/verify.sh"]
+
+volumes:
+  laravel-test-app:

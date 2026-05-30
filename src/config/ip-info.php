@@ -1,6 +1,6 @@
 <?php
 
-// @ip-info-stub-version 4.3.0
+// @ip-info-stub-version 4.5.0
 
 declare(strict_types=1);
 
@@ -242,6 +242,49 @@ return [
         'require_whois_country_match' => env('IP_INFO_FILTER_WHOIS_COUNTRY_MATCH', false),
         'block_response_status' => (int) env('IP_INFO_FILTER_RESPONSE_STATUS', 403),
         'block_response_message' => env('IP_INFO_FILTER_RESPONSE_MESSAGE', 'Access from your network is not allowed.'),
+        'expose_block_reason_header' => env('IP_INFO_FILTER_EXPOSE_REASON_HEADER', false),
+        'responses' => [
+            // 'tor' => ['status' => 451, 'message' => 'Tor connections are not allowed.'],
+            // 'default' => ['status' => 403, 'message' => 'Access from your network is not allowed.'],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Client IP risk scoring (v4.5+)
+    |--------------------------------------------------------------------------
+    */
+    'risk' => [
+        'enabled' => env('IP_INFO_RISK_ENABLED', true),
+        'thresholds' => [
+            'medium' => (int) env('IP_INFO_RISK_MEDIUM', 30),
+            'high' => (int) env('IP_INFO_RISK_HIGH', 60),
+        ],
+        'weights' => [
+            'tor' => (int) env('IP_INFO_RISK_WEIGHT_TOR', 40),
+            'proxy' => (int) env('IP_INFO_RISK_WEIGHT_PROXY', 25),
+            'vpn' => (int) env('IP_INFO_RISK_WEIGHT_VPN', 20),
+            'hosting' => (int) env('IP_INFO_RISK_WEIGHT_HOSTING', 15),
+            'whois_country_mismatch' => (int) env('IP_INFO_RISK_WEIGHT_WHOIS_MISMATCH', 20),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Verified crawlers (reverse DNS check, v4.5+)
+    |--------------------------------------------------------------------------
+    */
+    'verified_crawlers' => [
+        'enabled' => env('IP_INFO_VERIFIED_CRAWLERS_ENABLED', false),
+        'host_suffixes' => [
+            '.googlebot.com',
+            '.google.com',
+            '.search.msn.com',
+            '.yandex.ru',
+            '.yandex.net',
+        ],
+        'cache_ttl' => (int) env('IP_INFO_VERIFIED_CRAWLERS_CACHE_TTL', 86400),
+        'skip_filtering' => env('IP_INFO_VERIFIED_CRAWLERS_SKIP_FILTER', true),
     ],
 
     /*

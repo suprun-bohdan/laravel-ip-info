@@ -6,6 +6,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.5.0] - 2026-05-30
+
+### Added
+
+- **Per-reason filter responses:** `filtering.responses.{reason}` and `responses.default` via `FilterBlockResponseResolver`.
+- Optional `X-Ip-Info-Block-Reason` response header (`filtering.expose_block_reason_header`).
+- **`ClientIpRiskScore`** and `ClientIpRiskScorer` with config weights/thresholds; helpers `client_ip_risk()`, macro `clientIpRisk()`, Blade `@highrisk`.
+- **`ClientIpBlocked` event** dispatched before `ip.filter` abort.
+- **Verified crawlers:** reverse DNS check (`VerifiedCrawlerInspector`, `ReverseDnsResolver`); `is_verified_crawler()` helper; verified bots skip `ip.filter` when `verified_crawlers.skip_filtering=true`.
+- Docker verification: `make docker-verify` (package PHPUnit + ephemeral Laravel app).
+
+### Changed
+
+- Published stub version bumped to `4.5.0`.
+
+## [4.4.0] - 2026-05-30
+
+### Added
+
+- **Blade directives (v4.4):** `@eu`, `@continent`, `@privateip`, `@publicip`, `@tor`, `@unlesstor`, `@proxy`, `@unlessproxy`, `@anonymous`, `@hosting`, `@clientip`, `@anonymizedclientip`.
+- **Blade components:** `<x-ip-info::dev-banner />`, `<x-ip-info::country-gate />`, `<x-ip-info::debug-panel />` with publishable BEM CSS (`ip-info-blade` tag).
+- `IpInfoQuery::isInContinent()` for `@continent` directive.
+- `ip-info:install --with-blade` publishes CSS and component views.
+- `AboutCommand` documents `vendor:publish --tag=ip-info-blade`.
+
+### Changed
+
+- Published stub version bumped to `4.4.0`.
+
 ## [4.3.0] - 2026-05-30
 
 ### Added

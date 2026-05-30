@@ -19,6 +19,9 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 | Geo block/allow middleware | Yes |
 | Route aliases (`geo.block`, `geo.allow`) | Yes |
 | Global helpers (`client_country()`, `ip_info()`) | Yes |
+| Blade directives + dev components (v4.4+) | Yes |
+| IP risk score + per-reason filter responses (v4.5+) | Yes |
+| Verified crawler bypass for `ip.filter` (v4.5+) | Yes |
 | Queue batch lookup | Yes |
 | City/ASN geo in core | No (satellite packages) |
 
@@ -43,4 +46,4 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 - Choose **laravel-ip-info** when country code + client IP correctness + Laravel DX (fake, middleware, diagnose) matter most.
 - Choose **torann/geoip** or **stevebauman/location** when you need full geocoder-style location objects in core.
 
-Advanced fraud/VPN signals and ASN lookup are available in core from v4.3+ via threat intel, WHOIS, and optional HTTP enrichment — see the main README.
+Advanced fraud/VPN signals, WHOIS, Blade DX, and IP risk scoring are available in core from v4.3+ — see the main [README](../README.md).

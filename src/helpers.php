@@ -126,3 +126,19 @@ if (! function_exists('client_ip_intel')) {
         return app(ClientIpIntelBuilder::class)->fromRequest($request, $withWhois);
     }
 }
+
+if (! function_exists('client_ip_risk')) {
+    function client_ip_risk(?Request $request = null): \SuprunBohdan\IpInfo\Intel\ClientIpRiskScore
+    {
+        return client_ip_intel($request)->risk();
+    }
+}
+
+if (! function_exists('is_verified_crawler')) {
+    function is_verified_crawler(?string $ip = null): bool
+    {
+        $ip ??= client_ip();
+
+        return app(\SuprunBohdan\IpInfo\Intel\VerifiedCrawlerInspector::class)->isVerified($ip);
+    }
+}

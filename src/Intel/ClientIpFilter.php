@@ -6,9 +6,20 @@ namespace SuprunBohdan\IpInfo\Intel;
 
 final class ClientIpFilter
 {
+    public function __construct(
+        private VerifiedCrawlerInspector $crawlerInspector,
+    ) {}
+
     public function blockReason(ClientIpIntel $intel): ?string
     {
         if (! (bool) config('ip-info.filtering.enabled', false)) {
+            return null;
+        }
+
+        if (
+            (bool) config('ip-info.verified_crawlers.skip_filtering', true)
+            && $this->crawlerInspector->isVerified($intel->geo->ip)
+        ) {
             return null;
         }
 

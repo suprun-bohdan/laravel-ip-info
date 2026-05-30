@@ -53,6 +53,11 @@ final readonly class ClientIpIntel implements JsonSerializable
         return $policy->shouldLog($this->geo);
     }
 
+    public function risk(): ClientIpRiskScore
+    {
+        return app(ClientIpRiskScorer::class)->score($this);
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -21,7 +21,9 @@ use SuprunBohdan\IpInfo\Contracts\IpHttpClient;
 use SuprunBohdan\IpInfo\Contracts\IpLookupContract;
 use SuprunBohdan\IpInfo\Contracts\IpProvider;
 use SuprunBohdan\IpInfo\Contracts\IpProviderResolver;
+use SuprunBohdan\IpInfo\Contracts\ReverseDnsResolver;
 use SuprunBohdan\IpInfo\Contracts\SchemaInspector;
+use SuprunBohdan\IpInfo\Dns\SocketReverseDnsResolver;
 use SuprunBohdan\IpInfo\Http\HttpCircuitBreaker;
 use SuprunBohdan\IpInfo\Http\Psr18IpHttpClient;
 use SuprunBohdan\IpInfo\Http\ResilientHttpExecutor;
@@ -61,6 +63,7 @@ use SuprunBohdan\IpInfo\Laravel\Sync\PresetRecommendationBuilder;
 use SuprunBohdan\IpInfo\Laravel\Sync\PublishedFileComparator;
 use SuprunBohdan\IpInfo\Laravel\Telescope\IpInfoTelescopeRecorder;
 use SuprunBohdan\IpInfo\Laravel\View\BladeIpInfoDirectives;
+use SuprunBohdan\IpInfo\Laravel\View\Components\CountryGate;
 use SuprunBohdan\IpInfo\Privacy\IpPrivacyPolicy;
 use SuprunBohdan\IpInfo\Providers\ChainProvider;
 use SuprunBohdan\IpInfo\Providers\CleanTalkProvider;
@@ -82,6 +85,9 @@ use SuprunBohdan\IpInfo\Whois\WhoisParser;
 use SuprunBohdan\IpInfo\Contracts\WhoisClient;
 use SuprunBohdan\IpInfo\Intel\ClientIpFilter;
 use SuprunBohdan\IpInfo\Intel\ClientIpIntelBuilder;
+use SuprunBohdan\IpInfo\Intel\ClientIpRiskScorer;
+use SuprunBohdan\IpInfo\Intel\FilterBlockResponseResolver;
+use SuprunBohdan\IpInfo\Intel\VerifiedCrawlerInspector;
 use SuprunBohdan\IpInfo\Laravel\Events\IpInfoBuildingChain;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\BlockCountries;
 use SuprunBohdan\IpInfo\Logging\ClientIpLogger;
@@ -103,6 +109,21 @@ final class IpInfoServiceProvider extends ServiceProvider
         $this->app->singleton(WhoisLookupService::class);
         $this->app->singleton(ClientIpIntelBuilder::class);
         $this->app->singleton(ClientIpFilter::class);
+        $this->app->singleton(FilterBlockResponseResolver::class);
+        $this->app->singleton(ClientIpRiskScorer::class);
+        $this->app->singleton(ReverseDnsResolver::class, SocketReverseDnsResolver::class);
+        $this->app->singleton(VerifiedCrawlerInspector::class, function ($app) {
+            $store = config('ip-info.cache.store');
+            $cache = $app->make('cache');
+            $repository = is_string($store) && $store !== ''
+                ? $cache->store($store)
+                : $cache->store();
+
+            return new VerifiedCrawlerInspector(
+                $app->make(ReverseDnsResolver::class),
+                $repository,
+            );
+        });
         $this->app->singleton(ClientIpLogger::class);
         $this->app->singleton(StringIpResolver::class);
         $this->app->singleton(RequestIpResolver::class);
@@ -235,6 +256,11 @@ final class IpInfoServiceProvider extends ServiceProvider
             __DIR__.'/../stubs/Pest.php.stub' => base_path('tests/Pest.php'),
         ], 'ip-info-pest');
 
+        $this->publishes([
+            __DIR__.'/../../resources/css/ip-info-blade.css' => public_path('vendor/ip-info/ip-info-blade.css'),
+            __DIR__.'/../../resources/views/components/' => resource_path('views/vendor/ip-info/components'),
+        ], 'ip-info-blade');
+
         $this->loadViewsFrom(__DIR__.'/../../resources/views', 'ip-info');
 
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
@@ -291,6 +317,7 @@ final class IpInfoServiceProvider extends ServiceProvider
         }
 
         BladeIpInfoDirectives::register();
+        Blade::component(CountryGate::class, 'ip-info::country-gate');
     }
 
     private function buildChainProvider(Application $app): ChainProvider

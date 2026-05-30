@@ -238,8 +238,59 @@ Install shortcuts:
 ```bash
 php artisan ip-info:install --quick
 php artisan ip-info:install --register-middleware --force
+php artisan ip-info:install --with-blade
 php artisan ip-info:refresh-cloudflare-cidrs --write-env-snippet
+php artisan vendor:publish --tag=ip-info-blade
 php artisan ip-info:sync --register-middleware --force
+```
+
+## Blade DX (4.4+)
+
+Publish dev UI assets (optional):
+
+```bash
+php artisan vendor:publish --tag=ip-info-blade
+```
+
+```blade
+@env('local')
+    <link rel="stylesheet" href="{{ asset('vendor/ip-info/ip-info-blade.css') }}">
+    <x-ip-info::dev-banner />
+@endenv
+
+@tor
+    Tor exit detected
+@endtor
+
+@highrisk
+    Elevated IP risk (v4.5+)
+@endhighrisk
+```
+
+Directives: `@eu`, `@continent`, `@privateip`, `@publicip`, `@tor`, `@proxy`, `@clientip`, `@anonymizedclientip`, and matching `@end*` tags. Components: `dev-banner`, `country-gate`, `debug-panel`.
+
+## IP risk and filtering (4.5+)
+
+```php
+$risk = client_ip_risk(); // score 0–100, level low|medium|high
+is_verified_crawler();    // reverse DNS verified bot
+
+Event::listen(ClientIpBlocked::class, function (ClientIpBlocked $event) {
+    // $event->reason, $event->status, $event->intel
+});
+```
+
+Config highlights:
+
+```php
+'filtering' => [
+    'responses' => [
+        'tor' => ['status' => 451, 'message' => 'Tor not allowed'],
+    ],
+    'expose_block_reason_header' => true,
+],
+'risk' => ['weights' => [...], 'thresholds' => ['medium' => 30, 'high' => 60]],
+'verified_crawlers' => ['enabled' => true, 'skip_filtering' => true],
 ```
 
 ## Verification checklist
@@ -247,12 +298,7 @@ php artisan ip-info:sync --register-middleware --force
 ```bash
 composer test
 composer analyse
+make docker-verify   # PHPUnit + ephemeral Laravel app in Docker
 php artisan ip-info:diagnose --json
 php artisan ip-info:diagnose 8.8.8.8
-```
-
-For local integration testing (not shipped in package):
-
-```bash
-cd sandbox && make init && make test
 ```

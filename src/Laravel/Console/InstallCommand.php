@@ -16,6 +16,7 @@ final class InstallCommand extends Command
                             {--with-database : Download and seed the offline IPv4 database}
                             {--with-schedule : Append update schedule stubs to routes/console.php}
                             {--register-middleware : Register ResolveClientIp middleware in bootstrap/app.php or Kernel.php}
+                            {--with-blade : Publish Blade component views and CSS (tag ip-info-blade)}
                             {--force : Overwrite published config}';
 
     protected $description = 'Publish config, run migrations, and optionally apply a preset or offline database.';
@@ -61,6 +62,15 @@ final class InstallCommand extends Command
 
         if ($this->option('register-middleware')) {
             $middlewareRegistrar->register($this, (bool) $this->option('force'));
+        }
+
+        if ($this->option('with-blade')) {
+            Artisan::call('vendor:publish', [
+                '--tag' => 'ip-info-blade',
+                '--force' => (bool) $this->option('force'),
+            ]);
+            $this->line(trim(Artisan::output()));
+            $this->line('Add to your layout: <link rel="stylesheet" href="'.asset('vendor/ip-info/ip-info-blade.css').'">');
         }
 
         $this->info('Laravel IP Info installed.');

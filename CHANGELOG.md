@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-05-30
+
+### Added
+
+- Global helpers: `ip_info()`, `client_country()`, `client_ip()`, `client_ip_info()`.
+- Request macros: `ipInfo()`, `clientCountry()`, `clientIp()`, `isCountry()`.
+- Fluent query/result helpers: `isCountry()`, `inCountries()`, `isEu()`, `countryOr()`, `countryOrFail()`.
+- Runtime preset via `IP_INFO_PRESET` / `active_preset` (`PresetConfigurator`).
+- `quick_start` preset and `ip-info:install --quick`.
+- `ip-info:install --register-middleware`, `--with-schedule`.
+- `ip-info:refresh-cloudflare-cidrs` command and `CloudflareCidrFetcher`.
+- Route middleware aliases: `ip.resolve`, `geo.block`, `geo.allow`, `geo.share`.
+- Parameterized `geo.block:RU,BY` / `geo.allow:UA,PL` middleware.
+- Blade directives: `@country`, `@unlesscountry`, `@clientcountry`, `@geoblock`.
+- Validation rules: `CountryNotIn`, `ClientCountryIn`.
+- `ClientGeoData` DTO, `ClientGeoResource`, `ShareClientGeo` middleware.
+- `HasGeoFromIp` Eloquent trait.
+- Sync flags: `--register-middleware`, `--with-schedule`; extended inspector hints.
+
+### Changed
+
+- `BlockCountries` / `AllowCountries` accept route parameters; configurable block response message/status.
+- `ip-info:publish-schedule` delegates to shared `ScheduleStubPublisher` (includes Cloudflare CIDR refresh stub).
+- `ip-info:about` shows active preset, helpers, and middleware aliases.
+- Published stub version bumped to `4.2.0`.
+
 ## [4.1.0] - 2026-05-30
 
 ### Added

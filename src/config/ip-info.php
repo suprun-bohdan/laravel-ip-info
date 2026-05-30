@@ -1,6 +1,6 @@
 <?php
 
-// @ip-info-stub-version 4.1.0
+// @ip-info-stub-version 4.2.0
 
 declare(strict_types=1);
 
@@ -76,6 +76,18 @@ return [
             'maxmind' => ['enabled' => false],
             'http' => ['enabled' => false],
         ],
+        'quick_start' => [
+            'providers' => [
+                'chain' => ['local', 'http', 'null'],
+            ],
+            'http' => [
+                'enabled' => true,
+                'driver' => 'ipinfo',
+            ],
+            'cleantalk' => ['enabled' => false],
+            'database' => ['enabled' => false],
+            'maxmind' => ['enabled' => false],
+        ],
     ],
 
     /*
@@ -86,6 +98,8 @@ return [
     'security' => [
         'blocked_countries' => array_filter(explode(',', (string) env('IP_INFO_BLOCKED_COUNTRIES', ''))),
         'allowed_countries' => array_filter(explode(',', (string) env('IP_INFO_ALLOWED_COUNTRIES', ''))),
+        'block_response_status' => (int) env('IP_INFO_BLOCK_RESPONSE_STATUS', 403),
+        'block_response_message' => env('IP_INFO_BLOCK_RESPONSE_MESSAGE', 'Access from your country is not allowed.'),
     ],
 
     /*
@@ -198,5 +212,17 @@ return [
         ))),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Active preset (runtime)
+    |--------------------------------------------------------------------------
+    |
+    | When set, preset values are merged into runtime config on each boot.
+    | Use IP_INFO_PRESET in .env (install_preset is a deprecated alias).
+    |
+    */
+    'active_preset' => env('IP_INFO_PRESET', env('IP_INFO_ACTIVE_PRESET')),
+
+    /** @deprecated Use active_preset / IP_INFO_PRESET instead. */
     'install_preset' => env('IP_INFO_PRESET'),
 ];

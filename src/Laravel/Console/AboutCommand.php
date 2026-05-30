@@ -6,6 +6,7 @@ namespace SuprunBohdan\IpInfo\Laravel\Console;
 
 use Illuminate\Console\Command;
 use SuprunBohdan\IpInfo\Http\HttpCircuitBreaker;
+use SuprunBohdan\IpInfo\Laravel\Support\PresetConfigurator;
 
 final class AboutCommand extends Command
 {
@@ -13,12 +14,15 @@ final class AboutCommand extends Command
 
     protected $description = 'Display Laravel IP Info capabilities and enabled providers.';
 
-    public function handle(HttpCircuitBreaker $circuitBreaker): int
+    public function handle(HttpCircuitBreaker $circuitBreaker, PresetConfigurator $presetConfigurator): int
     {
         $driver = (string) config('ip-info.http.driver', 'ip-api');
 
         $rows = [
             ['Package', 'suprun-bohdan/laravel-ip-info'],
+            ['Active preset', $presetConfigurator->resolveActivePresetName() ?: 'none'],
+            ['Helpers loaded', function_exists('ip_info') ? 'yes' : 'no'],
+            ['Middleware aliases', 'ip.resolve, geo.block, geo.allow, geo.share'],
             ['Cache', config('ip-info.cache.enabled') ? 'enabled' : 'disabled'],
             ['Database provider', config('ip-info.database.enabled') ? 'enabled' : 'disabled'],
             ['MaxMind provider', config('ip-info.maxmind.enabled') ? 'enabled' : 'disabled'],
@@ -32,7 +36,7 @@ final class AboutCommand extends Command
 
         $this->table(['Setting', 'Value'], $rows);
         $this->newLine();
-        $this->line('Presets: cloudflare, cloudflare_strict, nginx_proxy, local_only');
+        $this->line('Presets: cloudflare, cloudflare_strict, nginx_proxy, local_only, quick_start');
 
         return self::SUCCESS;
     }

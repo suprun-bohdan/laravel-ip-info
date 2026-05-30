@@ -208,6 +208,7 @@ final class IpInfoSyncInspector
 
         if ($middlewareRegistered === 'missing') {
             $actions[] = 'Register ResolveClientIp middleware in bootstrap/app.php or app/Http/Kernel.php';
+            $actions[] = 'Auto-register middleware: php artisan ip-info:sync --register-middleware --force';
         }
 
         if ($databaseEnabled && $databaseStale) {
@@ -220,6 +221,15 @@ final class IpInfoSyncInspector
 
         if ($trustedHeadersWithoutProxyCidrs) {
             $actions[] = 'Set IP_INFO_TRUSTED_PROXY_CIDRS or disable trusted header requirement';
+            $actions[] = 'Fetch Cloudflare CIDRs: php artisan ip-info:refresh-cloudflare-cidrs --write-env-snippet';
+        }
+
+        if ($this->hasNoGeoProvidersEnabled()) {
+            $actions[] = 'Enable geo lookup: php artisan ip-info:install --quick or enable MaxMind/offline DB';
+        }
+
+        if ($this->scheduleStubsMissing()) {
+            $actions[] = 'Append schedule stubs: php artisan ip-info:install --with-schedule';
         }
 
         if ($routesEnabledWithoutMiddleware) {
@@ -238,5 +248,26 @@ final class IpInfoSyncInspector
         }
 
         return $path;
+    }
+
+    private function hasNoGeoProvidersEnabled(): bool
+    {
+        return ! config('ip-info.database.enabled', false)
+            && ! config('ip-info.maxmind.enabled', false)
+            && ! config('ip-info.http.enabled', false)
+            && ! config('ip-info.cleantalk.enabled', false);
+    }
+
+    private function scheduleStubsMissing(): bool
+    {
+        $target = base_path('routes/console.php');
+
+        if (! file_exists($target)) {
+            return true;
+        }
+
+        $contents = (string) file_get_contents($target);
+
+        return ! str_contains($contents, 'ip-info:update-database');
     }
 }

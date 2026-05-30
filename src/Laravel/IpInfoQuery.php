@@ -51,4 +51,32 @@ final class IpInfoQuery
 
         return $this->resolved;
     }
+
+    public function isCountry(string ...$codes): bool
+    {
+        return $this->result()->isCountry(...$codes);
+    }
+
+    /**
+     * @param  list<string>  $codes
+     */
+    public function inCountries(array $codes): bool
+    {
+        return $this->result()->inCountries($codes);
+    }
+
+    public function isEu(): bool
+    {
+        return $this->result()->isEu();
+    }
+
+    public function countryOr(?string $default): ?string
+    {
+        return $this->result()->countryOr($default);
+    }
+
+    public function countryOrFail(string $message = 'Unable to resolve country for IP address.'): string
+    {
+        return $this->result()->countryOrFail($message);
+    }
 }

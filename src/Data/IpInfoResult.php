@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SuprunBohdan\IpInfo\Data;
 
 use JsonSerializable;
+use SuprunBohdan\IpInfo\Exceptions\IpInfoException;
 use SuprunBohdan\IpInfo\Support\IpNormalizer;
 
 final readonly class IpInfoResult implements JsonSerializable
@@ -35,6 +36,49 @@ final readonly class IpInfoResult implements JsonSerializable
     public function countryNameOrCode(): ?string
     {
         return $this->geo->countryNameOrCode();
+    }
+
+    public function isCountry(string ...$codes): bool
+    {
+        $country = $this->countryCode();
+
+        if ($country === null) {
+            return false;
+        }
+
+        $normalized = strtoupper($country);
+
+        foreach ($codes as $code) {
+            if (strtoupper($code) === $normalized) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  list<string>  $codes
+     */
+    public function inCountries(array $codes): bool
+    {
+        return $this->isCountry(...$codes);
+    }
+
+    public function countryOr(?string $default): ?string
+    {
+        return $this->countryCode() ?? $default;
+    }
+
+    public function countryOrFail(string $message = 'Unable to resolve country for IP address.'): string
+    {
+        $country = $this->countryCode();
+
+        if ($country === null) {
+            throw new IpInfoException($message);
+        }
+
+        return $country;
     }
 
     /**

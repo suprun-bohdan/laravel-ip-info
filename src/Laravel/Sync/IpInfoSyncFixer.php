@@ -6,6 +6,8 @@ namespace SuprunBohdan\IpInfo\Laravel\Sync;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use SuprunBohdan\IpInfo\Laravel\Console\MiddlewareRegistrar;
+use SuprunBohdan\IpInfo\Laravel\Console\ScheduleStubPublisher;
 
 final class IpInfoSyncFixer
 {
@@ -21,6 +23,8 @@ final class IpInfoSyncFixer
         bool $publishMiddleware,
         bool $runMigrate,
         bool $force,
+        bool $registerMiddleware = false,
+        bool $withSchedule = false,
     ): array {
         $messages = [];
 
@@ -39,6 +43,24 @@ final class IpInfoSyncFixer
         if ($runMigrate) {
             Artisan::call('migrate', ['--force' => true]);
             $messages[] = trim(Artisan::output()) !== '' ? trim(Artisan::output()) : 'Ran migrations';
+        }
+
+        if ($registerMiddleware) {
+            /** @var MiddlewareRegistrar $registrar */
+            $registrar = app(MiddlewareRegistrar::class);
+
+            if ($registrar->register($command, $force)) {
+                $messages[] = 'Registered ResolveClientIp middleware';
+            }
+        }
+
+        if ($withSchedule) {
+            /** @var ScheduleStubPublisher $publisher */
+            $publisher = app(ScheduleStubPublisher::class);
+
+            if ($publisher->appendToConsole($command)) {
+                $messages[] = 'Appended schedule stubs to routes/console.php';
+            }
         }
 
         return $messages;

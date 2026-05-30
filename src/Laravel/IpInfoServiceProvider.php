@@ -29,15 +29,26 @@ use SuprunBohdan\IpInfo\Laravel\Console\DiagnoseIpCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\InstallCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\InstallDatabaseCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\MakeIpInfoTestCommand;
+use SuprunBohdan\IpInfo\Laravel\Console\MiddlewareRegistrar;
 use SuprunBohdan\IpInfo\Laravel\Console\PublishPestCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\PublishScheduleCommand;
+use SuprunBohdan\IpInfo\Laravel\Console\RefreshCloudflareCidrsCommand;
+use SuprunBohdan\IpInfo\Laravel\Console\ScheduleStubPublisher;
 use SuprunBohdan\IpInfo\Laravel\Console\StarterKitCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\SyncCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\UpdateDatabaseCommand;
 use SuprunBohdan\IpInfo\Laravel\Console\UpdateMaxMindCommand;
 use SuprunBohdan\IpInfo\Laravel\Database\LaravelSchemaInspector;
 use SuprunBohdan\IpInfo\Laravel\Events\IpInfoBuildingChain;
+use SuprunBohdan\IpInfo\Laravel\Http\Middleware\AllowCountries;
+use SuprunBohdan\IpInfo\Laravel\Http\Middleware\BlockCountries;
+use SuprunBohdan\IpInfo\Laravel\Http\Middleware\ResolveClientIp;
+use SuprunBohdan\IpInfo\Laravel\Http\Middleware\ShareClientGeo;
 use SuprunBohdan\IpInfo\Laravel\Http\LaravelIpHttpClient;
+use SuprunBohdan\IpInfo\Laravel\Support\CloudflareCidrFetcher;
+use SuprunBohdan\IpInfo\Laravel\Support\PresetConfigurator;
+use SuprunBohdan\IpInfo\Laravel\Support\RegisterRequestMacros;
+use SuprunBohdan\IpInfo\Laravel\View\BladeIpInfoDirectives;
 use SuprunBohdan\IpInfo\Laravel\Pulse\Livewire\IpInfoCard;
 use SuprunBohdan\IpInfo\Laravel\Pulse\Recorders\IpInfoRecorder;
 use SuprunBohdan\IpInfo\Laravel\Sync\HealthChecker;
@@ -120,6 +131,11 @@ final class IpInfoServiceProvider extends ServiceProvider
 
         $this->app->singleton(IpPrivacyPolicy::class);
 
+        $this->app->singleton(PresetConfigurator::class);
+        $this->app->singleton(CloudflareCidrFetcher::class);
+        $this->app->singleton(ScheduleStubPublisher::class);
+        $this->app->singleton(MiddlewareRegistrar::class);
+
         $this->app->singleton(PublishedFileComparator::class);
         $this->app->singleton(HealthChecker::class);
         $this->app->singleton(MiddlewareRegistrationDetector::class);
@@ -157,6 +173,12 @@ final class IpInfoServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        app(PresetConfigurator::class)->apply();
+
+        RegisterRequestMacros::register();
+        $this->registerMiddlewareAliases();
+        $this->registerBladeDirectives();
+
         $this->publishes([
             __DIR__.'/../config/ip-info.php' => config_path('ip-info.php'),
         ], 'ip-info-config');
@@ -188,6 +210,7 @@ final class IpInfoServiceProvider extends ServiceProvider
                 PublishPestCommand::class,
                 MakeIpInfoTestCommand::class,
                 SyncCommand::class,
+                RefreshCloudflareCidrsCommand::class,
             ]);
         }
 
@@ -196,6 +219,33 @@ final class IpInfoServiceProvider extends ServiceProvider
         }
 
         $this->registerPulseCard();
+    }
+
+    private function registerMiddlewareAliases(): void
+    {
+        if (! $this->app->bound('router')) {
+            return;
+        }
+
+        $router = $this->app->make('router');
+
+        if (! method_exists($router, 'aliasMiddleware')) {
+            return;
+        }
+
+        $router->aliasMiddleware('ip.resolve', ResolveClientIp::class);
+        $router->aliasMiddleware('geo.block', BlockCountries::class);
+        $router->aliasMiddleware('geo.allow', AllowCountries::class);
+        $router->aliasMiddleware('geo.share', ShareClientGeo::class);
+    }
+
+    private function registerBladeDirectives(): void
+    {
+        if (! class_exists(\Illuminate\Support\Facades\Blade::class)) {
+            return;
+        }
+
+        BladeIpInfoDirectives::register();
     }
 
     private function buildChainProvider(Application $app): ChainProvider

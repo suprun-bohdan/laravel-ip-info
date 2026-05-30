@@ -13,14 +13,35 @@ Author: [Bohdan Suprun](mailto:bohdan-suprun@outlook.com)
 
 ```bash
 composer require suprun-bohdan/laravel-ip-info
-php artisan ip-info:install
+php artisan ip-info:install --quick --register-middleware --force
 ```
+
+```php
+$country = client_country();              // helper
+$country = ip_info()->countryCode();        // fluent
+$country = request()->clientCountry();      // macro
+
+if (ip_info()->isCountry('UA')) {
+    // ...
+}
+```
+
+Classic facade API still works:
 
 ```php
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
 
-$country = IpInfo::for('8.8.8.8')->countryCode(); // "US"
+$country = IpInfo::for('8.8.8.8')->countryCode();
 $client = IpInfo::forRequest(request())->countryCode();
+```
+
+Production (Cloudflare):
+
+```bash
+php artisan ip-info:install --preset=cloudflare
+php artisan ip-info:refresh-cloudflare-cidrs --write-env-snippet
+# paste IP_INFO_TRUSTED_PROXY_CIDRS into .env
+# .env: IP_INFO_PRESET=cloudflare
 ```
 
 Testing:
@@ -183,11 +204,27 @@ File: `config/ip-info.php`
 
 See [docs/migration-guide.md](docs/migration-guide.md) and [docs/roadmap-v3.md](docs/roadmap-v3.md).
 
+## Helpers and route aliases
+
+| API | Example |
+|-----|---------|
+| `client_country()` | `client_country(default: 'XX')` |
+| `ip_info()` | `ip_info('8.8.8.8')->isCountry('US')` |
+| `geo.block:RU,BY` | Route middleware alias |
+| `geo.allow:UA,PL` | Allow-list middleware alias |
+| `ip.resolve` | Attach `ip_info` to request attributes |
+| `geo.share` | Share `ClientGeoData` / Inertia `geo` prop |
+
+Blade: `@country('UA')`, `@unlesscountry('RU')`, `@clientcountry('XX')`.
+
 ## Commands
 
 | Command | Description |
 |---------|-------------|
 | `ip-info:install` | Publish config, migrate, optional preset/database |
+| `ip-info:install --quick` | Enable HTTP geo via `quick_start` preset |
+| `ip-info:install --register-middleware` | Register `ResolveClientIp` (opt-in) |
+| `ip-info:refresh-cloudflare-cidrs` | Fetch Cloudflare egress CIDRs for `.env` |
 | `ip-info:install-database` | Download IPv4 CSV and seed offline DB |
 | `ip-info:update-database` | Refresh offline CSV database |
 | `ip-info:update-maxmind` | Download GeoLite2-Country MMDB |

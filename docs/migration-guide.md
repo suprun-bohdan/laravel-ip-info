@@ -201,6 +201,49 @@ IP_INFO_ROUTE_MIDDLEWARE=throttle:60,1
 
 Preset recommendations from sync are **report-only** — persist `.env` / `config/ip-info.php` manually.
 
+## DX helpers (4.2+)
+
+Global helpers (autoloaded):
+
+```php
+client_country();                    // ?string
+client_country(default: 'XX');      // fallback
+client_ip();
+client_ip_info();                    // IpInfoResult
+ip_info('8.8.8.8')->countryOr('XX');
+```
+
+Request macros:
+
+```php
+request()->clientCountry();
+request()->isCountry('UA', 'PL');
+request()->ipInfo();
+```
+
+Route middleware aliases:
+
+```php
+Route::middleware(['ip.resolve', 'geo.block:RU,BY'])->group(function () {
+    // ...
+});
+```
+
+Runtime preset — set once in `.env`:
+
+```env
+IP_INFO_PRESET=cloudflare
+```
+
+Install shortcuts:
+
+```bash
+php artisan ip-info:install --quick
+php artisan ip-info:install --register-middleware --force
+php artisan ip-info:refresh-cloudflare-cidrs --write-env-snippet
+php artisan ip-info:sync --register-middleware --force
+```
+
 ## Verification checklist
 
 ```bash

@@ -17,6 +17,8 @@ final class SyncCommand extends Command
                             {--publish-config : Publish config stub when allowed}
                             {--publish-middleware : Publish middleware stubs when allowed}
                             {--check-routes : Report routes section health only}
+                            {--register-middleware : Register ResolveClientIp middleware (opt-in)}
+                            {--with-schedule : Append update schedule stubs to routes/console.php}
                             {--force : Allow overwriting outdated published stubs}';
 
     protected $description = 'Audit Laravel IP Info integration (config, middleware, routes, security).';
@@ -41,6 +43,8 @@ final class SyncCommand extends Command
                 (bool) $this->option('publish-middleware'),
                 (bool) $this->option('fix'),
                 (bool) $this->option('force'),
+                (bool) $this->option('register-middleware'),
+                (bool) $this->option('with-schedule'),
             );
 
             foreach ($messages as $message) {
@@ -65,7 +69,9 @@ final class SyncCommand extends Command
     {
         return (bool) $this->option('fix')
             || (bool) $this->option('publish-config')
-            || (bool) $this->option('publish-middleware');
+            || (bool) $this->option('publish-middleware')
+            || (bool) $this->option('register-middleware')
+            || (bool) $this->option('with-schedule');
     }
 
     private function renderHumanReport(SyncReport $report): void

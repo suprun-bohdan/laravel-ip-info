@@ -6,18 +6,25 @@ namespace SuprunBohdan\IpInfo\Laravel\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
+use SuprunBohdan\IpInfo\Laravel\Support\PresetConfigurator;
 
 final class InstallCommand extends Command
 {
     protected $signature = 'ip-info:install
-                            {--preset= : Apply a named preset (cloudflare, nginx_proxy, local_only)}
+                            {--preset= : Apply a named preset (cloudflare, nginx_proxy, local_only, quick_start)}
+                            {--quick : Enable HTTP geo via quick_start preset}
                             {--with-database : Download and seed the offline IPv4 database}
+                            {--with-schedule : Append update schedule stubs to routes/console.php}
+                            {--register-middleware : Register ResolveClientIp middleware in bootstrap/app.php or Kernel.php}
                             {--force : Overwrite published config}';
 
     protected $description = 'Publish config, run migrations, and optionally apply a preset or offline database.';
 
-    public function handle(): int
-    {
+    public function handle(
+        PresetConfigurator $presetConfigurator,
+        ScheduleStubPublisher $schedulePublisher,
+        MiddlewareRegistrar $middlewareRegistrar,
+    ): int {
         $this->info('Installing Laravel IP Info...');
 
         $publishOptions = ['--tag' => 'ip-info-config'];
@@ -29,12 +36,17 @@ final class InstallCommand extends Command
         Artisan::call('vendor:publish', $publishOptions);
         $this->line(trim(Artisan::output()));
 
-        $preset = $this->option('preset');
+        if ($this->option('quick')) {
+            $this->applyPreset('quick_start', $presetConfigurator);
+            $this->printQuickStartEnvSnippet();
+        } else {
+            $preset = $this->option('preset');
 
-        if (is_string($preset) && $preset !== '') {
-            $this->applyPreset($preset);
-        } elseif (is_string(config('ip-info.install_preset')) && config('ip-info.install_preset') !== '') {
-            $this->applyPreset((string) config('ip-info.install_preset'));
+            if (is_string($preset) && $preset !== '') {
+                $this->applyPreset($preset, $presetConfigurator);
+            } elseif (is_string(config('ip-info.install_preset')) && config('ip-info.install_preset') !== '') {
+                $this->applyPreset((string) config('ip-info.install_preset'), $presetConfigurator);
+            }
         }
 
         $this->call('migrate', ['--force' => true]);
@@ -43,13 +55,21 @@ final class InstallCommand extends Command
             $this->call('ip-info:install-database');
         }
 
+        if ($this->option('with-schedule')) {
+            $schedulePublisher->appendToConsole($this);
+        }
+
+        if ($this->option('register-middleware')) {
+            $middlewareRegistrar->register($this, (bool) $this->option('force'));
+        }
+
         $this->info('Laravel IP Info installed.');
         $this->line('Run php artisan ip-info:sync --json to audit application integration.');
 
         return self::SUCCESS;
     }
 
-    private function applyPreset(string $name): void
+    private function applyPreset(string $name, PresetConfigurator $presetConfigurator): void
     {
         $presets = config('ip-info.presets', []);
 
@@ -59,27 +79,17 @@ final class InstallCommand extends Command
             return;
         }
 
-        $this->mergePresetIntoConfig($presets[$name]);
+        $presetConfigurator->mergePreset($presets[$name]);
         $this->info("Applied preset [{$name}]. Update .env or config/ip-info.php to persist.");
     }
 
-    /**
-     * @param  array<string, mixed>  $preset
-     */
-    private function mergePresetIntoConfig(array $preset): void
+    private function printQuickStartEnvSnippet(): void
     {
-        foreach ($preset as $section => $values) {
-            if (! is_array($values)) {
-                continue;
-            }
-
-            $current = config('ip-info.'.$section, []);
-
-            if (! is_array($current)) {
-                $current = [];
-            }
-
-            config(['ip-info.'.$section => array_replace_recursive($current, $values)]);
-        }
+        $this->newLine();
+        $this->line('Suggested .env entries for quick start:');
+        $this->line('IP_INFO_PRESET=quick_start');
+        $this->line('IP_INFO_HTTP_ENABLED=true');
+        $this->line('IP_INFO_HTTP_DRIVER=ipinfo');
+        $this->warn('Public HTTP lookups are subject to provider rate limits. Use MaxMind or offline DB in production.');
     }
 }

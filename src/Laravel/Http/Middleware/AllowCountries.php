@@ -1,6 +1,6 @@
 <?php
 
-// @ip-info-stub-version 4.1.0
+// @ip-info-stub-version 4.2.0
 
 declare(strict_types=1);
 
@@ -13,15 +13,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class AllowCountries
 {
-    /**
-     * @param  list<string>  $countries
-     */
-    public function __construct(private array $countries = []) {}
-
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string ...$countries): Response
     {
-        $allowed = $this->countries !== []
-            ? $this->countries
+        $allowed = $countries !== []
+            ? $countries
             : config('ip-info.security.allowed_countries', []);
 
         if (! is_array($allowed) || $allowed === []) {
@@ -29,10 +24,13 @@ final class AllowCountries
         }
 
         $country = IpInfo::forRequest($request)->countryCode();
-        $normalized = array_map(static fn (string $code): string => strtoupper($code), $allowed);
+        $normalizedAllowed = array_map(static fn (string $code): string => strtoupper($code), $allowed);
 
-        if ($country === null || ! in_array(strtoupper($country), $normalized, true)) {
-            abort(403, 'Access from your country is not allowed.');
+        if ($country === null || ! in_array(strtoupper($country), $normalizedAllowed, true)) {
+            abort(
+                (int) config('ip-info.security.block_response_status', 403),
+                (string) config('ip-info.security.block_response_message', 'Access from your country is not allowed.'),
+            );
         }
 
         return $next($request);

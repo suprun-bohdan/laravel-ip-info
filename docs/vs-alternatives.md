@@ -17,6 +17,8 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 | HTTP drivers (ip-api, ipinfo) | Yes |
 | HTTP circuit breaker + 429 soft-fail | Yes |
 | Geo block/allow middleware | Yes |
+| Route aliases (`geo.block`, `geo.allow`) | Yes |
+| Global helpers (`client_country()`, `ip_info()`) | Yes |
 | Queue batch lookup | Yes |
 | City/ASN geo in core | No (satellite packages) |
 

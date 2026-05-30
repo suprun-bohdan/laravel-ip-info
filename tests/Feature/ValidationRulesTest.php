@@ -55,4 +55,30 @@ final class ValidationRulesTest extends TestCase
 
         $this->assertTrue($validator->fails());
     }
+
+    public function test_country_not_in_rejects_blocked_country(): void
+    {
+        IpInfo::fake(['8.8.8.8' => 'RU']);
+
+        $validator = Validator::make(
+            ['ip' => '8.8.8.8'],
+            ['ip' => [new \SuprunBohdan\IpInfo\Laravel\Http\Rules\CountryNotIn(['RU'])]],
+        );
+
+        $this->assertTrue($validator->fails());
+    }
+
+    public function test_client_country_in_accepts_allowed_request_country(): void
+    {
+        IpInfo::fake(['203.0.113.10' => 'UA']);
+
+        $request = \Illuminate\Http\Request::create('/', 'GET', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        $this->app->instance('request', $request);
+
+        $validator = Validator::make([], [
+            '_geo' => [new \SuprunBohdan\IpInfo\Laravel\Http\Rules\ClientCountryIn(['UA'], $request)],
+        ]);
+
+        $this->assertFalse($validator->fails());
+    }
 }

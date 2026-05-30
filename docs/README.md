@@ -8,5 +8,3 @@ Public documentation for **suprun-bohdan/laravel-ip-info**.
 | [vs-alternatives.md](vs-alternatives.md) | Developers | Comparison with other Laravel geo packages |
 | [satellite-packages.md](satellite-packages.md) | Developers | Planned companion packages (ASN, fraud, Pulse UI) |
 | [PACKAGIST.md](PACKAGIST.md) | Maintainers | Packagist publish checklist |
-
-Internal planning, audits, and agent context live under [`.cursor/docs/`](../.cursor/docs/) (not published for end users).

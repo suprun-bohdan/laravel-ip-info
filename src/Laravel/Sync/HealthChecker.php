@@ -7,12 +7,14 @@ namespace SuprunBohdan\IpInfo\Laravel\Sync;
 use Illuminate\Support\Facades\Schema;
 use SuprunBohdan\IpInfo\Laravel\Support\CsvFilePathService;
 use SuprunBohdan\IpInfo\LocationDb\LocationDbCatalog;
+use SuprunBohdan\IpInfo\MaxMind\MaxMindCatalog;
 
 final class HealthChecker
 {
     public function __construct(
         private CsvFilePathService $csvFilePathService,
         private LocationDbCatalog $locationDbCatalog,
+        private MaxMindCatalog $maxMindCatalog,
     ) {}
 
     public function databaseIsStale(): bool
@@ -102,7 +104,7 @@ final class HealthChecker
             return false;
         }
 
-        $path = (string) config('ip-info.maxmind.database_path', '');
+        $path = $this->maxMindCatalog->databasePath();
 
         if ($path === '' || ! file_exists($path)) {
             return true;
@@ -120,7 +122,7 @@ final class HealthChecker
             return false;
         }
 
-        $path = (string) config('ip-info.maxmind.database_path', '');
+        $path = $this->maxMindCatalog->databasePath();
 
         return $path !== '' && is_readable($path);
     }

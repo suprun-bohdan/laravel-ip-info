@@ -48,6 +48,7 @@ final class DiagnoseIpCommand extends Command
             'location_db.asn_stale' => $locationDbAsnStale,
             'location_db.asn_installed' => $this->healthChecker->asnDbIsInstalled(),
             'maxmind.enabled' => (bool) config('ip-info.maxmind.enabled'),
+            'maxmind.edition' => (string) config('ip-info.maxmind.edition', 'country'),
             'maxmind.stale' => $maxmindStale,
             'maxmind.readable' => $maxmindReadable,
             'http.enabled' => (bool) config('ip-info.http.enabled'),
@@ -100,7 +101,8 @@ final class DiagnoseIpCommand extends Command
         }
 
         if ($maxmindStale) {
-            $this->warn('MaxMind database is missing or stale. Run ip-info:update-maxmind.');
+            $edition = (string) config('ip-info.maxmind.edition', 'country');
+            $this->warn("MaxMind database is missing or stale. Run ip-info:update-maxmind --edition={$edition}.");
         }
 
         $this->newLine();

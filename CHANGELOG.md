@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.7.3] - 2026-05-30
+
+### Added
+
+- MaxMind GeoLite2 editions: `country`, `city`, and `asn` via `IP_INFO_MAXMIND_EDITION` and `ip-info:update-maxmind --edition=`.
+- `MaxMindCatalog` and `MaxMindRecordMapper` for edition-aware paths and GeoLite2 record mapping (city, coordinates, ASN).
+- Sync/diagnose report active MaxMind edition (`maxmind.edition`).
+
+### Changed
+
+- `maxmind.database_path` auto-resolves per edition when `IP_INFO_MAXMIND_DATABASE_PATH` is unset.
+- Published stub version bumped to `4.7.3`.
+
 ## [4.7.2] - 2026-05-30
 
 ### Added

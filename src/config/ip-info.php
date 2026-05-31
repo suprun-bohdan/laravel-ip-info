@@ -1,6 +1,6 @@
 <?php
 
-// @ip-info-stub-version 4.7.2
+// @ip-info-stub-version 4.7.3
 
 declare(strict_types=1);
 
@@ -186,8 +186,9 @@ return [
     */
     'maxmind' => [
         'enabled' => env('IP_INFO_MAXMIND_ENABLED', false),
+        'edition' => env('IP_INFO_MAXMIND_EDITION', 'country'),
         'license_key' => env('IP_INFO_MAXMIND_LICENSE_KEY'),
-        'database_path' => env('IP_INFO_MAXMIND_DATABASE_PATH', storage_path('app/geoip/GeoLite2-Country.mmdb')),
+        'database_path' => env('IP_INFO_MAXMIND_DATABASE_PATH'),
         'stale_days' => (int) env('IP_INFO_MAXMIND_STALE_DAYS', 30),
     ],
 

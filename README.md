@@ -489,7 +489,7 @@ Optional MaxMind GeoLite2:
 ```bash
 # .env: IP_INFO_MAXMIND_ENABLED=true, IP_INFO_MAXMIND_LICENSE_KEY=...
 composer require maxmind-db/reader
-php artisan ip-info:update-maxmind
+php artisan ip-info:update-maxmind --edition=country
 ```
 
 ## Application sync
@@ -550,7 +550,7 @@ File: `config/ip-info.php`
 | `ip-info:starter` | Publish middleware + install bundle |
 | `ip-info:update-database` | Refresh offline IPv4 CSV |
 | `ip-info:update-location-db` | Download ip-location-db MMDB files |
-| `ip-info:update-maxmind` | Download GeoLite2-Country MMDB |
+| `ip-info:update-maxmind` | Download GeoLite2 MMDB (`--edition=country\|city\|asn`) |
 | `composer bench` | Run cache + MMDB micro-benchmarks |
 | `make docker-stress` | Benchmarks + HTTP wrk stress (Docker) |
 

@@ -134,6 +134,21 @@ New `.env` keys:
 
 Existing v1 cache entries continue to work; they upgrade to v2 on the next cache miss.
 
+## Upgrading to 4.7.3
+
+Patch release — no breaking changes.
+
+1. `composer update suprun-bohdan/laravel-ip-info`
+2. Optional — choose MaxMind edition:
+
+| Edition | Env | Download |
+|---------|-----|----------|
+| Country (default) | `IP_INFO_MAXMIND_EDITION=country` | `ip-info:update-maxmind --edition=country` |
+| City | `IP_INFO_MAXMIND_EDITION=city` | `ip-info:update-maxmind --edition=city` |
+| ASN | `IP_INFO_MAXMIND_EDITION=asn` | `ip-info:update-maxmind --edition=asn` |
+
+When `IP_INFO_MAXMIND_DATABASE_PATH` is unset, the MMDB path defaults to `storage/app/private/geoip/GeoLite2-{Edition}.mmdb` for the configured edition.
+
 ## Upgrading to 4.7.2
 
 Patch release — no breaking changes.

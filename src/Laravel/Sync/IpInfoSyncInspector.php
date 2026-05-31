@@ -41,6 +41,7 @@ final class IpInfoSyncInspector
         $locationDbAsnStale = $this->healthChecker->asnDbIsStale();
 
         $maxmindEnabled = (bool) config('ip-info.maxmind.enabled', false);
+        $maxmindEdition = (string) config('ip-info.maxmind.edition', 'country');
         $maxmindStale = $this->healthChecker->maxmindIsStale();
         $maxmindInstalled = $this->healthChecker->maxmindIsReadable();
 
@@ -101,6 +102,7 @@ final class IpInfoSyncInspector
             locationDbAsnInstalled: $locationDbAsnInstalled,
             locationDbAsnStale: $locationDbAsnStale,
             maxmindEnabled: $maxmindEnabled,
+            maxmindEdition: $maxmindEdition,
             maxmindStale: $maxmindStale,
             maxmindInstalled: $maxmindInstalled,
             trustedHeadersWithoutProxyCidrs: $trustedHeadersWithoutProxyCidrs,
@@ -243,7 +245,8 @@ final class IpInfoSyncInspector
         }
 
         if ($maxmindEnabled && $maxmindStale) {
-            $actions[] = 'Refresh MaxMind database: php artisan ip-info:update-maxmind';
+            $edition = (string) config('ip-info.maxmind.edition', 'country');
+            $actions[] = "Refresh MaxMind database: php artisan ip-info:update-maxmind --edition={$edition}";
         }
 
         if ($trustedHeadersWithoutProxyCidrs) {

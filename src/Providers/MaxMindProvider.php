@@ -6,14 +6,19 @@ namespace SuprunBohdan\IpInfo\Providers;
 
 use MaxMind\Db\Reader;
 use SuprunBohdan\IpInfo\Contracts\IpProvider;
-use SuprunBohdan\IpInfo\Data\GeoLocation;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\ProviderResult;
+use SuprunBohdan\IpInfo\MaxMind\MaxMindCatalog;
+use SuprunBohdan\IpInfo\MaxMind\MaxMindRecordMapper;
 use SuprunBohdan\IpInfo\Support\IpValidator;
 
 final class MaxMindProvider implements IpProvider
 {
-    public function __construct(private IpValidator $validator) {}
+    public function __construct(
+        private IpValidator $validator,
+        private MaxMindCatalog $catalog,
+        private MaxMindRecordMapper $recordMapper,
+    ) {}
 
     public function lookup(IpAddress $ip): ProviderResult
     {
@@ -29,7 +34,7 @@ final class MaxMindProvider implements IpProvider
             return ProviderResult::skipped('maxmind');
         }
 
-        $path = (string) config('ip-info.maxmind.database_path', '');
+        $path = $this->catalog->databasePath();
 
         if ($path === '' || ! is_readable($path)) {
             return ProviderResult::skipped('maxmind');
@@ -45,32 +50,7 @@ final class MaxMindProvider implements IpProvider
                 return ProviderResult::miss('maxmind');
             }
 
-            $countryCode = isset($record['country']) && is_array($record['country'])
-                ? ($record['country']['iso_code'] ?? null)
-                : ($record['country_code'] ?? null);
-
-            if (! is_string($countryCode) || $countryCode === '') {
-                return ProviderResult::miss('maxmind');
-            }
-
-            $countryCode = strtoupper($countryCode);
-            $continent = null;
-
-            if (isset($record['continent']) && is_array($record['continent'])) {
-                $continent = $record['continent']['code'] ?? null;
-                $continent = is_string($continent) ? strtoupper($continent) : null;
-            }
-
-            $geo = new GeoLocation(
-                $countryCode,
-                is_string($record['country']['names']['en'] ?? null) ? $record['country']['names']['en'] : null,
-                $continent,
-                isset($record['country']['is_in_european_union'])
-                    ? (bool) $record['country']['is_in_european_union']
-                    : null,
-            );
-
-            return ProviderResult::hit($countryCode, 'maxmind', $geo);
+            return $this->recordMapper->map($record, $this->catalog->edition());
         } catch (\Throwable) {
             return ProviderResult::skipped('maxmind');
         }

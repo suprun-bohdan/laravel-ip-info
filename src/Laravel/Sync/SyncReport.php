@@ -32,6 +32,7 @@ final readonly class SyncReport
         public bool $locationDbAsnInstalled,
         public bool $locationDbAsnStale,
         public bool $maxmindEnabled,
+        public string $maxmindEdition,
         public bool $maxmindStale,
         public bool $maxmindInstalled,
         public bool $trustedHeadersWithoutProxyCidrs,
@@ -83,6 +84,7 @@ final readonly class SyncReport
             ],
             'maxmind' => [
                 'enabled' => $this->maxmindEnabled,
+                'edition' => $this->maxmindEdition,
                 'stale' => $this->maxmindStale,
                 'installed' => $this->maxmindInstalled,
             ],

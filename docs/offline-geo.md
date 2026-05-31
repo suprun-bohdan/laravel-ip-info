@@ -174,6 +174,18 @@ storage/app/ip-info/location-db/
 
 Ensure the directory is writable by the web/queue user and included in backups if geo is business-critical.
 
+## MaxMind GeoLite2 editions (optional)
+
+If you have a [MaxMind license key](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data), use the `maxmind` provider instead of CDN `location_db` files:
+
+| Edition | Env | Command |
+|---------|-----|---------|
+| Country | `IP_INFO_MAXMIND_EDITION=country` | `ip-info:update-maxmind --edition=country` |
+| City | `IP_INFO_MAXMIND_EDITION=city` | `ip-info:update-maxmind --edition=city` |
+| ASN | `IP_INFO_MAXMIND_EDITION=asn` | `ip-info:update-maxmind --edition=asn` |
+
+When `IP_INFO_MAXMIND_DATABASE_PATH` is unset, files default to `storage/app/private/geoip/GeoLite2-{Edition}.mmdb` (local disk).
+
 ## Troubleshooting
 
 | Symptom | Fix |

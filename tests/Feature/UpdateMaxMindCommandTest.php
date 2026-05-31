@@ -6,6 +6,7 @@ namespace SuprunBohdan\IpInfo\Tests\Feature;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use SuprunBohdan\IpInfo\MaxMind\MaxMindCatalog;
 use SuprunBohdan\IpInfo\Tests\TestCase;
 
 final class UpdateMaxMindCommandTest extends TestCase
@@ -38,9 +39,9 @@ final class UpdateMaxMindCommandTest extends TestCase
             '--force' => true,
         ]);
 
-        $path = storage_path('app/private/geoip/GeoLite2-Country.mmdb');
+        $path = $this->app->make(MaxMindCatalog::class)->databasePath('country');
 
-        $this->assertSame(0, $exitCode);
+        $this->assertSame(0, $exitCode, Artisan::output());
         $this->assertFileExists($path);
         $this->assertSame('country-bytes', file_get_contents($path));
 
@@ -66,9 +67,9 @@ final class UpdateMaxMindCommandTest extends TestCase
             '--force' => true,
         ]);
 
-        $path = storage_path('app/private/geoip/GeoLite2-City.mmdb');
+        $path = $this->app->make(MaxMindCatalog::class)->databasePath('city');
 
-        $this->assertSame(0, $exitCode);
+        $this->assertSame(0, $exitCode, Artisan::output());
         $this->assertFileExists($path);
         $this->assertSame('city-bytes', file_get_contents($path));
 

@@ -1,0 +1,75 @@
+{
+  "name": "suprun-bohdan/laravel-ip-info",
+  "description": "Laravel package for IP detection, normalization, request IP resolution, geo lookup, caching, and infrastructure-aware IP intelligence.",
+  "type": "library",
+  "keywords": ["laravel", "ip", "geo", "geolocation", "country", "maxmind", "middleware"],
+  "homepage": "https://github.com/suprun-bohdan/laravel-ip-info",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Bohdan Suprun",
+      "email": "bohdan-suprun@outlook.com"
+    }
+  ],
+  "require": {
+    "php": "^8.2",
+    "psr/http-client": "^1.0",
+    "psr/http-factory": "^1.0",
+    "psr/http-message": "^2.0",
+    "illuminate/support": "^10.0|^11.0|^12.0",
+    "illuminate/http": "^10.0|^11.0|^12.0",
+    "illuminate/cache": "^10.0|^11.0|^12.0",
+    "illuminate/bus": "^10.0|^11.0|^12.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^8.0|^9.0|^10.0",
+    "phpunit/phpunit": "^10.5|^11.0",
+    "mockery/mockery": "^1.6",
+    "laravel/pint": "^1.0",
+    "phpstan/phpstan": "^2.0",
+    "larastan/larastan": "^3.0",
+    "illuminate/database": "^10.0|^11.0|^12.0",
+    "maxmind-db/reader": "^1.11"
+  },
+  "autoload": {
+    "psr-4": {
+      "SuprunBohdan\\IpInfo\\": "src/"
+    },
+    "files": [
+      "src/helpers.php"
+    ]
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "SuprunBohdan\\IpInfo\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "SuprunBohdan\\IpInfo\\Laravel\\IpInfoServiceProvider"
+      ],
+      "aliases": {
+        "IpInfo": "SuprunBohdan\\IpInfo\\Laravel\\Facades\\IpInfo"
+      }
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit",
+    "bench": "php bench/run.php",
+    "analyse": "vendor/bin/phpstan analyse --memory-limit=512M",
+    "format": "vendor/bin/pint",
+    "format:test": "vendor/bin/pint --test",
+    "validate": "composer validate --strict"
+  },
+  "suggest": {
+    "ext-redis": "Required when using the redis cache store",
+    "ext-phar": "Required for ip-info:update-maxmind archive extraction",
+    "illuminate/database": "Required for DatabaseRangeProvider offline IPv4 lookup",
+    "maxmind-db/reader": "Required for MaxMindProvider and LocationDbProvider MMDB lookups",
+    "laravel/pulse": "Optional Laravel Pulse metrics via IpInfoRecorder",
+    "nyholm/psr7": "PSR-17 factories when binding PSR-18 ClientInterface manually"
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

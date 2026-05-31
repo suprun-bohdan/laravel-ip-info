@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Pint code style issues that failed the GitHub Actions **Tests** workflow.
+- `UpdateMaxMindCommandTest` resolves MMDB path via `MaxMindCatalog` (fixes PHP 8.2 / Laravel 10–11 CI matrix).
 
 ## [4.7.7] - 2026-05-30
 

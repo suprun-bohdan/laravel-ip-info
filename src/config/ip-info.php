@@ -1,6 +1,6 @@
 <?php
 
-// @ip-info-stub-version 4.7.5
+// @ip-info-stub-version 4.7.6
 
 declare(strict_types=1);
 

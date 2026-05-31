@@ -131,6 +131,12 @@ php artisan ip-info:sync --json
 
 CI runs `composer bench` on every push to `main` (see GitHub Actions **Benchmarks** workflow).
 
+### CI stress job (v4.7.6+)
+
+The **Stress** workflow (`.github/workflows/stress.yml`) runs on push to `main` and via `workflow_dispatch`. It executes `make docker-stress` with a 20-minute timeout.
+
+The job sets `continue-on-error: true` — a stress failure does **not** block merges. Use it as an optional regression signal for HTTP + MMDB throughput, not as a required gate.
+
 ## Related
 
 - [Offline geo guide](offline-geo.md) — install MMDB for production

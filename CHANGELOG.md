@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.7.6] - 2026-05-30
+
+### Changed
+
+- Documented CI **Stress** workflow as non-blocking (`continue-on-error: true`) in [benchmarks.md](docs/benchmarks.md).
+- Published stub version bumped to `4.7.6`.
+
 ## [4.7.5] - 2026-05-30
 
 ### Added

@@ -6,15 +6,15 @@ namespace SuprunBohdan\IpInfo\Tests\Feature;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Validator;
+use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
-use SuprunBohdan\IpInfo\Laravel\Http\Rules\ClientIpNotProxy;
 use SuprunBohdan\IpInfo\Laravel\Http\Rules\ClientIpNotTor;
 use SuprunBohdan\IpInfo\Laravel\Http\Rules\ValidNormalizedIp;
 use SuprunBohdan\IpInfo\Providers\HttpIpProvider;
 use SuprunBohdan\IpInfo\Support\IpThreatInspector;
 use SuprunBohdan\IpInfo\Support\RequestProxyInspector;
 use SuprunBohdan\IpInfo\Tests\TestCase;
-use Illuminate\Support\Facades\Validator;
 
 final class IpInspectionTest extends TestCase
 {
@@ -82,7 +82,7 @@ final class IpInspectionTest extends TestCase
         ]);
 
         $provider = $this->app->make(HttpIpProvider::class);
-        $result = $provider->lookup(new \SuprunBohdan\IpInfo\Data\IpAddress('8.8.8.8'));
+        $result = $provider->lookup(new IpAddress('8.8.8.8'));
 
         $this->assertTrue($result->isHit());
         $this->assertTrue($result->threats?->isProxy());

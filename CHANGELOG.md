@@ -6,11 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [Unreleased]
+
+### Fixed
+
+- Pint code style issues that failed the GitHub Actions **Tests** workflow.
+
 ## [4.7.7] - 2026-05-30
 
 ### Changed
 
-- Packagist install demo updated to `^4.7.7` (see README maintainer note).
 - Published stub version bumped to `4.7.7`.
 
 ## [4.7.6] - 2026-05-30

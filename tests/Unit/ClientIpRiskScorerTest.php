@@ -6,7 +6,6 @@ namespace SuprunBohdan\IpInfo\Tests\Unit;
 
 use SuprunBohdan\IpInfo\Data\GeoLocation;
 use SuprunBohdan\IpInfo\Data\IpInfoResult;
-use SuprunBohdan\IpInfo\Data\IpThreatSignals;
 use SuprunBohdan\IpInfo\Data\WhoisRecord;
 use SuprunBohdan\IpInfo\Intel\ClientIpIntel;
 use SuprunBohdan\IpInfo\Intel\ClientIpRiskScorer;

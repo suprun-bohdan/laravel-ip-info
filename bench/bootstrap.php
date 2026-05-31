@@ -5,6 +5,7 @@ declare(strict_types=1);
 require __DIR__.'/../vendor/autoload.php';
 
 use Illuminate\Foundation\Application;
+use MaxMind\Db\Reader;
 use SuprunBohdan\IpInfo\Tests\TestCase;
 
 /**
@@ -127,7 +128,7 @@ function bench_location_db_fixture_dir(): ?string
         return null;
     }
 
-    if (! class_exists(\MaxMind\Db\Reader::class)) {
+    if (! class_exists(Reader::class)) {
         echo "SKIP: location DB benchmark (composer require maxmind-db/reader)\n";
 
         return null;

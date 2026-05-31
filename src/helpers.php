@@ -6,15 +6,17 @@ use Illuminate\Http\Request;
 use SuprunBohdan\IpInfo\Data\IpInfoResult;
 use SuprunBohdan\IpInfo\Data\IpPrivacyProfile;
 use SuprunBohdan\IpInfo\Data\IpThreatSignals;
+use SuprunBohdan\IpInfo\Data\WhoisRecord;
+use SuprunBohdan\IpInfo\Intel\ClientIpIntel;
+use SuprunBohdan\IpInfo\Intel\ClientIpIntelBuilder;
+use SuprunBohdan\IpInfo\Intel\ClientIpRiskScore;
+use SuprunBohdan\IpInfo\Intel\VerifiedCrawlerInspector;
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
 use SuprunBohdan\IpInfo\Laravel\IpInfoManager;
 use SuprunBohdan\IpInfo\Laravel\IpInfoQuery;
 use SuprunBohdan\IpInfo\Support\IpNormalizer;
 use SuprunBohdan\IpInfo\Support\IpPrivacyInspector;
 use SuprunBohdan\IpInfo\Support\RequestProxyInspector;
-use SuprunBohdan\IpInfo\Data\WhoisRecord;
-use SuprunBohdan\IpInfo\Intel\ClientIpIntel;
-use SuprunBohdan\IpInfo\Intel\ClientIpIntelBuilder;
 use SuprunBohdan\IpInfo\Whois\WhoisLookupService;
 
 if (! function_exists('ip_info')) {
@@ -146,7 +148,7 @@ if (! function_exists('client_ip_intel')) {
 }
 
 if (! function_exists('client_ip_risk')) {
-    function client_ip_risk(?Request $request = null): \SuprunBohdan\IpInfo\Intel\ClientIpRiskScore
+    function client_ip_risk(?Request $request = null): ClientIpRiskScore
     {
         return client_ip_intel($request)->risk();
     }
@@ -157,6 +159,6 @@ if (! function_exists('is_verified_crawler')) {
     {
         $ip ??= client_ip();
 
-        return app(\SuprunBohdan\IpInfo\Intel\VerifiedCrawlerInspector::class)->isVerified($ip);
+        return app(VerifiedCrawlerInspector::class)->isVerified($ip);
     }
 }

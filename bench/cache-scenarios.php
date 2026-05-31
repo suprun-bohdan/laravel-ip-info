@@ -39,7 +39,7 @@ bench_print($hit);
 
 $miss = bench_measure(
     'cache miss storm (unique IPs)',
-    function () use ($missIterations): void {
+    function (): void {
         static $i = 1;
 
         IpInfo::for(bench_public_ipv4(8, 4, $i))->countryCode();
@@ -55,7 +55,7 @@ config(['ip-info.cache.enabled' => false]);
 
 $noCache = bench_measure(
     'no cache (unique IPs, fake provider)',
-    function () use ($missIterations): void {
+    function (): void {
         static $i = 1;
 
         IpInfo::for(bench_public_ipv4(8, 4, $i))->countryCode();

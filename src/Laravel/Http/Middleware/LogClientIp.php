@@ -8,6 +8,7 @@ namespace SuprunBohdan\IpInfo\Laravel\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use SuprunBohdan\IpInfo\Intel\ClientIpIntel;
 use SuprunBohdan\IpInfo\Intel\ClientIpIntelBuilder;
 use SuprunBohdan\IpInfo\Logging\ClientIpLogger;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +24,7 @@ final class LogClientIp
     {
         $intel = $request->attributes->get('client_ip_intel');
 
-        if (! $intel instanceof \SuprunBohdan\IpInfo\Intel\ClientIpIntel) {
+        if (! $intel instanceof ClientIpIntel) {
             $intel = $this->intelBuilder->fromRequest(
                 $request,
                 (bool) config('ip-info.whois.enabled', false)

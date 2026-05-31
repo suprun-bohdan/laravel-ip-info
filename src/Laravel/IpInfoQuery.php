@@ -12,6 +12,8 @@ use SuprunBohdan\IpInfo\Data\IpPrivacyProfile;
 use SuprunBohdan\IpInfo\Data\IpThreatSignals;
 use SuprunBohdan\IpInfo\Data\WhoisRecord;
 use SuprunBohdan\IpInfo\Intel\ClientIpIntel;
+use SuprunBohdan\IpInfo\Intel\ClientIpIntelBuilder;
+use SuprunBohdan\IpInfo\Whois\WhoisLookupService;
 
 final class IpInfoQuery
 {
@@ -89,12 +91,12 @@ final class IpInfoQuery
 
     public function whois(bool $force = false): ?WhoisRecord
     {
-        return app(\SuprunBohdan\IpInfo\Whois\WhoisLookupService::class)->lookup($this->ip(), $force);
+        return app(WhoisLookupService::class)->lookup($this->ip(), $force);
     }
 
     public function intel(bool $withWhois = false): ClientIpIntel
     {
-        return app(\SuprunBohdan\IpInfo\Intel\ClientIpIntelBuilder::class)->fromResult(
+        return app(ClientIpIntelBuilder::class)->fromResult(
             $this->result(),
             $this->privacy(),
             $withWhois,

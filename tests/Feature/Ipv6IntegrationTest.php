@@ -6,11 +6,14 @@ namespace SuprunBohdan\IpInfo\Tests\Feature;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use SuprunBohdan\IpInfo\Data\GeoLocation;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\IpInfoResult;
 use SuprunBohdan\IpInfo\Data\ProviderStatus;
+use SuprunBohdan\IpInfo\Exceptions\InvalidIpAddressException;
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\ResolveClientIp;
+use SuprunBohdan\IpInfo\LocationDb\MmdbReaderPool;
 use SuprunBohdan\IpInfo\Providers\DatabaseRangeProvider;
 use SuprunBohdan\IpInfo\Providers\HttpIpProvider;
 use SuprunBohdan\IpInfo\Resolvers\RequestIpResolver;
@@ -50,7 +53,7 @@ final class Ipv6IntegrationTest extends TestCase
 
         $resolver = $this->app->make(RequestIpResolver::class);
 
-        $this->expectException(\SuprunBohdan\IpInfo\Exceptions\InvalidIpAddressException::class);
+        $this->expectException(InvalidIpAddressException::class);
 
         $resolver->resolve($request);
     }
@@ -119,7 +122,7 @@ final class Ipv6IntegrationTest extends TestCase
     {
         $result = new IpInfoResult(
             self::PUBLIC_IPV6,
-            \SuprunBohdan\IpInfo\Data\GeoLocation::fromCountryCode('US'),
+            GeoLocation::fromCountryCode('US'),
             true,
             false,
             'fake',
@@ -152,13 +155,13 @@ final class Ipv6IntegrationTest extends TestCase
             'ip-info.maxmind.enabled' => false,
         ]);
 
-        $pool = \Mockery::mock(\SuprunBohdan\IpInfo\LocationDb\MmdbReaderPool::class);
+        $pool = \Mockery::mock(MmdbReaderPool::class);
         $pool->shouldReceive('lookup')
             ->once()
             ->with(self::PUBLIC_IPV6)
             ->andReturn(['country_code' => 'US']);
 
-        $this->instance(\SuprunBohdan\IpInfo\LocationDb\MmdbReaderPool::class, $pool);
+        $this->instance(MmdbReaderPool::class, $pool);
         $this->app->forgetInstance('ip-info');
 
         $this->assertSame('US', IpInfo::for(self::PUBLIC_IPV6)->countryCode());

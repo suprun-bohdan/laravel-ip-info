@@ -5,9 +5,15 @@ declare(strict_types=1);
 namespace SuprunBohdan\IpInfo\Tests\Feature;
 
 use Illuminate\Http\Request;
+use SuprunBohdan\IpInfo\Contracts\IpProvider;
+use SuprunBohdan\IpInfo\Contracts\IpProviderResolver;
+use SuprunBohdan\IpInfo\Data\GeoLocation;
+use SuprunBohdan\IpInfo\Data\IpAddress;
+use SuprunBohdan\IpInfo\Data\ProviderResult;
 use SuprunBohdan\IpInfo\Laravel\Data\ClientGeoData;
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\ShareClientGeo;
+use SuprunBohdan\IpInfo\Providers\ChainProvider;
 use SuprunBohdan\IpInfo\Tests\TestCase;
 
 final class ClientGeoDataTest extends TestCase
@@ -31,20 +37,20 @@ final class ClientGeoDataTest extends TestCase
     {
         config(['ip-info.frontend.expose_city' => true]);
 
-        $provider = new class implements \SuprunBohdan\IpInfo\Contracts\IpProvider
+        $provider = new class implements IpProvider
         {
-            public function lookup(\SuprunBohdan\IpInfo\Data\IpAddress $ip): \SuprunBohdan\IpInfo\Data\ProviderResult
+            public function lookup(IpAddress $ip): ProviderResult
             {
-                return \SuprunBohdan\IpInfo\Data\ProviderResult::hit(
+                return ProviderResult::hit(
                     'UA',
                     'test',
-                    new \SuprunBohdan\IpInfo\Data\GeoLocation('UA', city: 'Kyiv', region: '30'),
+                    new GeoLocation('UA', city: 'Kyiv', region: '30'),
                 );
             }
         };
 
-        $this->app->make(\SuprunBohdan\IpInfo\Contracts\IpProviderResolver::class)
-            ->replace(new \SuprunBohdan\IpInfo\Providers\ChainProvider([$provider]));
+        $this->app->make(IpProviderResolver::class)
+            ->replace(new ChainProvider([$provider]));
 
         $request = Request::create('/', 'GET', server: ['REMOTE_ADDR' => '203.0.113.10']);
         (new ShareClientGeo)->handle($request, fn () => response('ok'));
@@ -57,20 +63,20 @@ final class ClientGeoDataTest extends TestCase
 
     public function test_for_frontend_excludes_coordinates_by_default(): void
     {
-        $provider = new class implements \SuprunBohdan\IpInfo\Contracts\IpProvider
+        $provider = new class implements IpProvider
         {
-            public function lookup(\SuprunBohdan\IpInfo\Data\IpAddress $ip): \SuprunBohdan\IpInfo\Data\ProviderResult
+            public function lookup(IpAddress $ip): ProviderResult
             {
-                return \SuprunBohdan\IpInfo\Data\ProviderResult::hit(
+                return ProviderResult::hit(
                     'UA',
                     'test',
-                    new \SuprunBohdan\IpInfo\Data\GeoLocation('UA', latitude: 50.45, longitude: 30.52),
+                    new GeoLocation('UA', latitude: 50.45, longitude: 30.52),
                 );
             }
         };
 
-        $this->app->make(\SuprunBohdan\IpInfo\Contracts\IpProviderResolver::class)
-            ->replace(new \SuprunBohdan\IpInfo\Providers\ChainProvider([$provider]));
+        $this->app->make(IpProviderResolver::class)
+            ->replace(new ChainProvider([$provider]));
 
         $request = Request::create('/', 'GET', server: ['REMOTE_ADDR' => '203.0.113.10']);
         (new ShareClientGeo)->handle($request, fn () => response('ok'));
@@ -85,20 +91,20 @@ final class ClientGeoDataTest extends TestCase
     {
         config(['ip-info.frontend.expose_coordinates' => true]);
 
-        $provider = new class implements \SuprunBohdan\IpInfo\Contracts\IpProvider
+        $provider = new class implements IpProvider
         {
-            public function lookup(\SuprunBohdan\IpInfo\Data\IpAddress $ip): \SuprunBohdan\IpInfo\Data\ProviderResult
+            public function lookup(IpAddress $ip): ProviderResult
             {
-                return \SuprunBohdan\IpInfo\Data\ProviderResult::hit(
+                return ProviderResult::hit(
                     'UA',
                     'test',
-                    new \SuprunBohdan\IpInfo\Data\GeoLocation('UA', latitude: 50.45, longitude: 30.52),
+                    new GeoLocation('UA', latitude: 50.45, longitude: 30.52),
                 );
             }
         };
 
-        $this->app->make(\SuprunBohdan\IpInfo\Contracts\IpProviderResolver::class)
-            ->replace(new \SuprunBohdan\IpInfo\Providers\ChainProvider([$provider]));
+        $this->app->make(IpProviderResolver::class)
+            ->replace(new ChainProvider([$provider]));
 
         $request = Request::create('/', 'GET', server: ['REMOTE_ADDR' => '203.0.113.10']);
         (new ShareClientGeo)->handle($request, fn () => response('ok'));

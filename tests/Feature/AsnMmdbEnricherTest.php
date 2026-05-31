@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SuprunBohdan\IpInfo\Tests\Feature;
 
+use Illuminate\Support\Facades\Cache;
 use Mockery;
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
 use SuprunBohdan\IpInfo\LocationDb\MmdbReaderPool;
@@ -95,7 +96,7 @@ final class AsnMmdbEnricherTest extends TestCase
         file_put_contents($storageDir.'/asn-ipv4.mmdb', 'v4');
         file_put_contents($storageDir.'/asn-ipv6.mmdb', 'v6');
 
-        \Illuminate\Support\Facades\Cache::store('array')->put('laravel_ip_info:v1:'.self::PUBLIC_IPV4, 'US', 3600);
+        Cache::store('array')->put('laravel_ip_info:v1:'.self::PUBLIC_IPV4, 'US', 3600);
 
         $pool = Mockery::mock(MmdbReaderPool::class);
         $pool->shouldReceive('lookup')
@@ -116,7 +117,7 @@ final class AsnMmdbEnricherTest extends TestCase
         $this->assertSame(15169, $first->asn());
         $this->assertSame(15169, $second->asn());
         $this->assertSame('cache', $second->provider);
-        $this->assertTrue(\Illuminate\Support\Facades\Cache::store('array')->has('laravel_ip_info:v2:'.self::PUBLIC_IPV4));
+        $this->assertTrue(Cache::store('array')->has('laravel_ip_info:v2:'.self::PUBLIC_IPV4));
 
         @unlink($storageDir.'/asn-ipv4.mmdb');
         @unlink($storageDir.'/asn-ipv6.mmdb');

@@ -588,10 +588,6 @@ make docker-stress
 
 Local Docker sandbox (gitignored): `cd sandbox && make init && make test`
 
-### Packagist install demo (maintainers)
-
-Separate helper project at `../laravel-ip-info-packagist-demo` runs repeated `composer require suprun-bohdan/laravel-ip-info` against Packagist (default `INSTALLS=1815`). Smoke: `INSTALLS=2 make packagist-installs`. Full run: `make packagist-installs`.
-
 ## License
 
 MIT. See [LICENSE](LICENSE).

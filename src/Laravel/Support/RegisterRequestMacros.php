@@ -9,6 +9,7 @@ use SuprunBohdan\IpInfo\Data\IpInfoResult;
 use SuprunBohdan\IpInfo\Data\IpPrivacyProfile;
 use SuprunBohdan\IpInfo\Data\IpThreatSignals;
 use SuprunBohdan\IpInfo\Intel\ClientIpIntel;
+use SuprunBohdan\IpInfo\Intel\ClientIpRiskScore;
 use SuprunBohdan\IpInfo\Laravel\Facades\IpInfo;
 use SuprunBohdan\IpInfo\Support\RequestProxyInspector;
 
@@ -80,7 +81,7 @@ final class RegisterRequestMacros
             return client_ip_intel($this, $withWhois);
         });
 
-        Request::macro('clientIpRisk', function (): \SuprunBohdan\IpInfo\Intel\ClientIpRiskScore {
+        Request::macro('clientIpRisk', function (): ClientIpRiskScore {
             /** @var Request $this */
             return client_ip_risk($this);
         });

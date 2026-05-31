@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace SuprunBohdan\IpInfo\Tests\Unit;
 
-use SuprunBohdan\IpInfo\LocationDb\LocationDbCatalog;
 use SuprunBohdan\IpInfo\Laravel\Sync\HealthChecker;
+use SuprunBohdan\IpInfo\LocationDb\LocationDbCatalog;
 use SuprunBohdan\IpInfo\Tests\TestCase;
 
 final class HealthCheckerAsnTest extends TestCase

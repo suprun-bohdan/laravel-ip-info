@@ -7,10 +7,12 @@ namespace SuprunBohdan\IpInfo\Tests\Unit;
 use Illuminate\Contracts\Events\Dispatcher;
 use SuprunBohdan\IpInfo\Cache\NullIpCache;
 use SuprunBohdan\IpInfo\Contracts\IpProvider;
+use SuprunBohdan\IpInfo\Data\GeoLocation;
 use SuprunBohdan\IpInfo\Data\IpAddress;
 use SuprunBohdan\IpInfo\Data\ProviderResult;
 use SuprunBohdan\IpInfo\Laravel\IpInfoManager;
 use SuprunBohdan\IpInfo\Laravel\IpInfoQuery;
+use SuprunBohdan\IpInfo\LocationDb\AsnMmdbEnricher;
 use SuprunBohdan\IpInfo\Providers\MutableIpProviderResolver;
 use SuprunBohdan\IpInfo\Resolvers\RequestIpResolver;
 use SuprunBohdan\IpInfo\Resolvers\StringIpResolver;
@@ -48,7 +50,7 @@ final class IpInfoQueryTest extends TestCase
             new NullIpCache,
             $this->app->make(Dispatcher::class),
             $resolver,
-            $this->app->make(\SuprunBohdan\IpInfo\LocationDb\AsnMmdbEnricher::class),
+            $this->app->make(AsnMmdbEnricher::class),
         );
 
         $query = new IpInfoQuery($manager, new IpAddress('8.8.8.8'));
@@ -68,7 +70,7 @@ final class IpInfoQueryTest extends TestCase
                 return ProviderResult::hit(
                     'US',
                     'test',
-                    new \SuprunBohdan\IpInfo\Data\GeoLocation(
+                    new GeoLocation(
                         'US',
                         autonomousSystemNumber: 15169,
                     ),
@@ -88,7 +90,7 @@ final class IpInfoQueryTest extends TestCase
             new NullIpCache,
             $this->app->make(Dispatcher::class),
             $resolver,
-            $this->app->make(\SuprunBohdan\IpInfo\LocationDb\AsnMmdbEnricher::class),
+            $this->app->make(AsnMmdbEnricher::class),
         );
 
         $query = new IpInfoQuery($manager, new IpAddress('8.8.8.8'));

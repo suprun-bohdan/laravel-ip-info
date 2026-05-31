@@ -167,4 +167,3 @@ final readonly class GeoLocation
         return $fields === [] || in_array($field, $fields, true);
     }
 }
-

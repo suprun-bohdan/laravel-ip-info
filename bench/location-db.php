@@ -35,7 +35,7 @@ bench_print($warm);
 
 $cold = bench_measure(
     'location_db MMDB cold-ish (unique 8.8.8.x)',
-    function () use ($coldIterations): void {
+    function (): void {
         static $i = 1;
 
         IpInfo::for(bench_public_ipv4(8, 8, $i))->countryCode();

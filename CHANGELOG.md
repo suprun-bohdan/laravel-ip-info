@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.7.5] - 2026-05-30
+
+### Added
+
+- `IP_INFO_FRONTEND_EXPOSE_COORDINATES` / `frontend.expose_coordinates` — opt-in `lat`/`lon` in `ClientGeoData::forFrontend()`.
+
+### Changed
+
+- `ClientGeoData` maps coordinates from `IpInfoResult::coordinates()`.
+- Published stub version bumped to `4.7.5`.
+
 ## [4.7.4] - 2026-05-30
 
 ### Added

@@ -1,6 +1,6 @@
 <?php
 
-// @ip-info-stub-version 4.7.4
+// @ip-info-stub-version 4.7.5
 
 declare(strict_types=1);
 
@@ -379,6 +379,7 @@ return [
     */
     'frontend' => [
         'expose_city' => env('IP_INFO_FRONTEND_EXPOSE_CITY', false),
+        'expose_coordinates' => env('IP_INFO_FRONTEND_EXPOSE_COORDINATES', false),
     ],
 
     /*

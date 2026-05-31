@@ -131,8 +131,16 @@ New `.env` keys:
 | `IP_INFO_LOCATION_DB_ENRICH_ASN` | Post-lookup ASN enrichment |
 | `IP_INFO_LOCATION_DB_EDITION=asn_country` | RouteViews country MMDB as primary |
 | `IP_INFO_FRONTEND_EXPOSE_CITY` | Include city/region in `ClientGeoData::forFrontend()` |
+| `IP_INFO_FRONTEND_EXPOSE_COORDINATES` | Include lat/lon in `ClientGeoData::forFrontend()` (v4.7.5+) |
 
 Existing v1 cache entries continue to work; they upgrade to v2 on the next cache miss.
+
+## Upgrading to 4.7.5
+
+Patch release — no breaking changes.
+
+1. `composer update suprun-bohdan/laravel-ip-info`
+2. Optional — set `IP_INFO_FRONTEND_EXPOSE_COORDINATES=true` to include `lat`/`lon` in Inertia/SPA payloads via `ClientGeoData::forFrontend()`.
 
 ## Upgrading to 4.7.4
 

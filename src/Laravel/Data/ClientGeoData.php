@@ -21,6 +21,8 @@ final readonly class ClientGeoData implements JsonSerializable
         public bool $isPrivate,
         public ?string $city = null,
         public ?string $region = null,
+        public ?float $latitude = null,
+        public ?float $longitude = null,
     ) {}
 
     public static function fromRequest(?Request $request = null): self
@@ -38,6 +40,8 @@ final readonly class ClientGeoData implements JsonSerializable
 
     public static function fromResult(IpInfoResult $result): self
     {
+        $coordinates = $result->coordinates();
+
         return new self(
             ip: $result->ip,
             countryCode: $result->countryCode(),
@@ -48,6 +52,8 @@ final readonly class ClientGeoData implements JsonSerializable
             isPrivate: $result->isPrivate,
             city: $result->city(),
             region: $result->region(),
+            latitude: $coordinates['lat'] ?? null,
+            longitude: $coordinates['lon'] ?? null,
         );
     }
 
@@ -67,6 +73,11 @@ final readonly class ClientGeoData implements JsonSerializable
         if (config('ip-info.frontend.expose_city', false)) {
             $payload['city'] = $this->city;
             $payload['region'] = $this->region;
+        }
+
+        if (config('ip-info.frontend.expose_coordinates', false)) {
+            $payload['lat'] = $this->latitude;
+            $payload['lon'] = $this->longitude;
         }
 
         return $payload;

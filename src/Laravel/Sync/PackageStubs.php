@@ -6,7 +6,7 @@ namespace SuprunBohdan\IpInfo\Laravel\Sync;
 
 final class PackageStubs
 {
-    public const VERSION = '4.7.4';
+    public const VERSION = '4.7.5';
 
     public const STUB_VERSION_PATTERN = '/@ip-info-stub-version\s+([\d.]+)/';
 

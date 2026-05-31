@@ -170,6 +170,8 @@ final class InstallCommand extends Command
         $this->line('Suggested .env entries for ASN enrichment:');
         $this->line('IP_INFO_LOCATION_DB_ENRICH_ASN=true');
         $this->line('IP_INFO_LOCATION_DB_SOURCE=routeviews');
+        $this->line('For offline geo chain also set IP_INFO_LOCATION_DB_ENABLED=true (or use HTTP/MaxMind providers).');
+        $this->warn('ASN enrichment works with any geo provider once asn-mmdb files are installed.');
         $this->warn('ASN MMDB data is CC BY 4.0 — attribute RouteViews / ip-location-db when displaying ASN data.');
     }
 

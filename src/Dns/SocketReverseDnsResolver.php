@@ -23,7 +23,7 @@ final class SocketReverseDnsResolver implements ReverseDnsResolver
     {
         $ip = @gethostbyname($hostname);
 
-        if ($ip === false || $ip === $hostname) {
+        if ($ip === $hostname) {
             return null;
         }
 

@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.7.2] - 2026-05-30
+
+### Added
+
+- `whereAsn()` alias on `IpInfoQuery` / `IpInfoResult` (same as `isAsn()`).
+- Sync/diagnose reporting for ASN MMDB (`location_db.asn_installed`, `location_db.asn_stale`).
+
+### Fixed
+
+- PHPStan level 6 clean (CI static analysis).
+- ASN enrichment now runs on cache hits (v1 and v2); enriched ASN is written back to cache v2.
+- `HealthChecker` tracks missing/stale `asn` edition when `enrich_asn` is enabled.
+- Install `--with-asn-db` env snippet clarifies offline chain vs enrichment-only setup.
+
+### Changed
+
+- Published stub version bumped to `4.7.2`.
+
 ## [4.7.0] - 2026-05-30
 
 ### Added

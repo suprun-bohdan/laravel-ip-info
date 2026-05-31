@@ -24,6 +24,9 @@ final readonly class ClientIpIntel implements JsonSerializable
         return $this->geo->threats;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function forLogging(bool $includeWhois = true, bool $includeThreats = true): array
     {
         $payload = $this->geo->forLogging()->toArray();

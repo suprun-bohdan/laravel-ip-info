@@ -65,6 +65,37 @@ final class HealthChecker
         return $this->locationDbCatalog->isInstalled($this->locationDbCatalog->edition());
     }
 
+    public function asnDbIsInstalled(): bool
+    {
+        if (! config('ip-info.location_db.enrich_asn', false)) {
+            return false;
+        }
+
+        return $this->locationDbCatalog->isInstalled('asn');
+    }
+
+    public function asnDbIsStale(): bool
+    {
+        if (! config('ip-info.location_db.enrich_asn', false)) {
+            return false;
+        }
+
+        $staleDays = (int) config('ip-info.location_db.stale_days', 30);
+
+        if (! $this->locationDbCatalog->isInstalled('asn')) {
+            return true;
+        }
+
+        $newest = 0;
+
+        foreach ($this->locationDbCatalog->ipVersions() as $version) {
+            $path = $this->locationDbCatalog->filePath('asn', $version);
+            $newest = max($newest, (int) filemtime($path));
+        }
+
+        return (time() - $newest) > ($staleDays * 86400);
+    }
+
     public function maxmindIsStale(): bool
     {
         if (! config('ip-info.maxmind.enabled', false)) {
@@ -103,12 +134,15 @@ final class HealthChecker
     {
         $databaseStale = $this->databaseIsStale();
         $locationDbStale = $this->locationDbIsStale();
+        $asnDbStale = $this->asnDbIsStale();
         $maxmindStale = $this->maxmindIsStale();
         $maxmindReadable = $this->maxmindIsReadable();
         $locationDbReadable = $this->locationDbIsReadable();
+        $asnDbInstalled = $this->asnDbIsInstalled();
 
-        return ! $databaseStale && ! $locationDbStale && ! $maxmindStale
+        return ! $databaseStale && ! $locationDbStale && ! $maxmindStale && ! $asnDbStale
             && (! config('ip-info.maxmind.enabled') || $maxmindReadable)
-            && (! config('ip-info.location_db.enabled') || $locationDbReadable);
+            && (! config('ip-info.location_db.enabled') || $locationDbReadable)
+            && (! config('ip-info.location_db.enrich_asn') || $asnDbInstalled);
     }
 }

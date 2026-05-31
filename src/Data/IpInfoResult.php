@@ -118,6 +118,11 @@ final readonly class IpInfoResult implements JsonSerializable
         return in_array($asn, $asns, true);
     }
 
+    public function whereAsn(int ...$asns): bool
+    {
+        return $this->isAsn(...$asns);
+    }
+
     public function isCity(string ...$cities): bool
     {
         $city = $this->city();

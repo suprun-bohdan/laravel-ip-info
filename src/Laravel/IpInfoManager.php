@@ -259,7 +259,7 @@ final class IpInfoManager implements IpLookupContract
     {
         $isPrivate = $this->isPrivate($address);
         $isPublic = $this->isPublic($address);
-        $geo = $this->asnEnricher->enrich($address, $providerResult->geoLocation());
+        $geo = $this->enrichAndMaybeCacheGeo($address, $providerResult->geoLocation(), $isPublic);
         $countryCode = $geo->countryCode;
 
         if (! $this->fakeMode && config('ip-info.cache.enabled', true) && $isPublic) {
@@ -305,7 +305,9 @@ final class IpInfoManager implements IpLookupContract
             $cachedGeo = $this->cache->getGeo($address);
 
             if ($cachedGeo !== null) {
-                return $this->makeResultFromGeo($address, $cachedGeo, $isPublic, $isPrivate, 'cache');
+                $geo = $this->enrichAndMaybeCacheGeo($address, $cachedGeo, $isPublic);
+
+                return $this->makeResultFromGeo($address, $geo, $isPublic, $isPrivate, 'cache');
             }
         }
 
@@ -315,7 +317,31 @@ final class IpInfoManager implements IpLookupContract
             return null;
         }
 
-        return $this->makeResult($address, $cached, $isPublic, $isPrivate, 'cache');
+        $geo = $this->enrichAndMaybeCacheGeo(
+            $address,
+            GeoLocation::fromCountryCode($cached),
+            $isPublic,
+        );
+
+        return $this->makeResultFromGeo($address, $geo, $isPublic, $isPrivate, 'cache');
+    }
+
+    private function enrichAndMaybeCacheGeo(IpAddress $address, GeoLocation $geo, bool $isPublic): GeoLocation
+    {
+        $previousAsn = $geo->autonomousSystemNumber;
+        $enriched = $this->asnEnricher->enrich($address, $geo);
+
+        if ($this->fakeMode || ! config('ip-info.cache.enabled', true) || ! $isPublic) {
+            return $enriched;
+        }
+
+        $asnAdded = $previousAsn === null && $enriched->autonomousSystemNumber !== null;
+
+        if ($asnAdded && config('ip-info.cache.store_geo_fields', true) && $enriched->countryCode !== null) {
+            $this->cache->putGeo($address, $enriched);
+        }
+
+        return $enriched;
     }
 
     private function shouldUseRequestMemo(): bool

@@ -25,6 +25,9 @@ final class CountryGate extends Component
 
     public function render(): View
     {
-        return view('ip-info::components.country-gate');
+        /** @var view-string $view */
+        $view = 'ip-info::components.country-gate';
+
+        return view($view);
     }
 }

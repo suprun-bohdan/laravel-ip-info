@@ -58,4 +58,42 @@ final class IpInfoQueryTest extends TestCase
         $this->assertSame('US', $query->geo()->countryCode);
         $this->assertSame(1, $provider->calls);
     }
+
+    public function test_where_asn_matches_autonomous_system_number(): void
+    {
+        $provider = new class implements IpProvider
+        {
+            public function lookup(IpAddress $ip): ProviderResult
+            {
+                return ProviderResult::hit(
+                    'US',
+                    'test',
+                    new \SuprunBohdan\IpInfo\Data\GeoLocation(
+                        'US',
+                        autonomousSystemNumber: 15169,
+                    ),
+                );
+            }
+        };
+
+        $resolver = new MutableIpProviderResolver($provider);
+
+        $manager = new IpInfoManager(
+            $this->app->make(StringIpResolver::class),
+            $this->app->make(RequestIpResolver::class),
+            $this->app->make(IpValidator::class),
+            $this->app->make(IpNormalizer::class),
+            $this->app->make(IpPrivacyInspector::class),
+            $this->app->make(IpThreatInspector::class),
+            new NullIpCache,
+            $this->app->make(Dispatcher::class),
+            $resolver,
+            $this->app->make(\SuprunBohdan\IpInfo\LocationDb\AsnMmdbEnricher::class),
+        );
+
+        $query = new IpInfoQuery($manager, new IpAddress('8.8.8.8'));
+
+        $this->assertTrue($query->whereAsn(15169));
+        $this->assertFalse($query->whereAsn(13335));
+    }
 }

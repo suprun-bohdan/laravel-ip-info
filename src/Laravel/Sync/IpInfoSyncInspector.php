@@ -37,6 +37,8 @@ final class IpInfoSyncInspector
         $locationDbStale = $this->healthChecker->locationDbIsStale();
         $locationDbInstalled = $this->healthChecker->locationDbIsReadable();
         $locationDbEdition = (string) config('ip-info.location_db.edition', 'country');
+        $locationDbAsnInstalled = $this->healthChecker->asnDbIsInstalled();
+        $locationDbAsnStale = $this->healthChecker->asnDbIsStale();
 
         $maxmindEnabled = (bool) config('ip-info.maxmind.enabled', false);
         $maxmindStale = $this->healthChecker->maxmindIsStale();
@@ -62,6 +64,7 @@ final class IpInfoSyncInspector
             $locationDbStale,
             $maxmindEnabled,
             $maxmindStale,
+            $locationDbAsnStale,
             $trustedHeadersWithoutProxyCidrs,
             $routesEnabledWithoutMiddleware,
         );
@@ -95,6 +98,8 @@ final class IpInfoSyncInspector
             locationDbStale: $locationDbStale,
             locationDbInstalled: $locationDbInstalled,
             locationDbEdition: $locationDbEdition,
+            locationDbAsnInstalled: $locationDbAsnInstalled,
+            locationDbAsnStale: $locationDbAsnStale,
             maxmindEnabled: $maxmindEnabled,
             maxmindStale: $maxmindStale,
             maxmindInstalled: $maxmindInstalled,
@@ -198,6 +203,7 @@ final class IpInfoSyncInspector
         bool $locationDbStale,
         bool $maxmindEnabled,
         bool $maxmindStale,
+        bool $locationDbAsnStale,
         bool $trustedHeadersWithoutProxyCidrs,
         bool $routesEnabledWithoutMiddleware,
     ): array {
@@ -230,6 +236,10 @@ final class IpInfoSyncInspector
 
         if ($locationDbEnabled && $locationDbStale) {
             $actions[] = 'Refresh location DB MMDB: php artisan ip-info:update-location-db --force';
+        }
+
+        if (config('ip-info.location_db.enrich_asn', false) && $locationDbAsnStale) {
+            $actions[] = 'Refresh ASN MMDB: php artisan ip-info:update-location-db --edition=asn --force';
         }
 
         if ($maxmindEnabled && $maxmindStale) {

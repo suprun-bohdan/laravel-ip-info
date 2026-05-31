@@ -28,6 +28,7 @@ final class DiagnoseIpCommand extends Command
     {
         $databaseStale = $this->healthChecker->databaseIsStale();
         $locationDbStale = $this->healthChecker->locationDbIsStale();
+        $locationDbAsnStale = $this->healthChecker->asnDbIsStale();
         $maxmindStale = $this->healthChecker->maxmindIsStale();
         $maxmindReadable = $this->healthChecker->maxmindIsReadable();
         $driver = (string) config('ip-info.http.driver', 'ip-api');
@@ -43,6 +44,9 @@ final class DiagnoseIpCommand extends Command
             'location_db.edition' => (string) config('ip-info.location_db.edition', 'country'),
             'location_db.stale' => $locationDbStale,
             'location_db.readable' => $this->healthChecker->locationDbIsReadable(),
+            'location_db.enrich_asn' => (bool) config('ip-info.location_db.enrich_asn', false),
+            'location_db.asn_stale' => $locationDbAsnStale,
+            'location_db.asn_installed' => $this->healthChecker->asnDbIsInstalled(),
             'maxmind.enabled' => (bool) config('ip-info.maxmind.enabled'),
             'maxmind.stale' => $maxmindStale,
             'maxmind.readable' => $maxmindReadable,
@@ -91,6 +95,10 @@ final class DiagnoseIpCommand extends Command
             $this->warn('Location DB MMDB is missing or stale. Run ip-info:update-location-db --force.');
         }
 
+        if ($locationDbAsnStale) {
+            $this->warn('ASN MMDB is missing or stale. Run ip-info:update-location-db --edition=asn --force.');
+        }
+
         if ($maxmindStale) {
             $this->warn('MaxMind database is missing or stale. Run ip-info:update-maxmind.');
         }
@@ -100,9 +108,16 @@ final class DiagnoseIpCommand extends Command
 
         if ($lookup !== null) {
             $this->newLine();
-            $this->table(['Field', 'Value'], collect($lookup)->map(
-                fn (mixed $value, string $key): array => [$key, $value === null ? 'null' : (is_bool($value) ? ($value ? 'true' : 'false') : (string) $value)]
-            )->values()->all());
+            $lookupRows = [];
+
+            foreach ($lookup as $key => $value) {
+                $lookupRows[] = [
+                    (string) $key,
+                    $value === null ? 'null' : (is_bool($value) ? ($value ? 'true' : 'false') : (string) $value),
+                ];
+            }
+
+            $this->table(['Field', 'Value'], $lookupRows);
         }
 
         return $healthy ? self::SUCCESS : self::FAILURE;

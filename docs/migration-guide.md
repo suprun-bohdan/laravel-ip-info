@@ -134,6 +134,14 @@ New `.env` keys:
 
 Existing v1 cache entries continue to work; they upgrade to v2 on the next cache miss.
 
+## Upgrading to 4.7.2
+
+Patch release — no breaking changes.
+
+1. `composer update suprun-bohdan/laravel-ip-info`
+2. If you use `enrich_asn`, run `ip-info:sync --json` — missing/stale ASN MMDB is now reported.
+3. ASN enrichment runs on cache hits (v1/v2); no action required unless you rely on stale v1-only entries without ASN.
+
 ## Upgrading to 4.6
 
 New optional offline provider **`location_db`** — no breaking changes for existing installs.

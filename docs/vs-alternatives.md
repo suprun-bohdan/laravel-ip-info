@@ -26,7 +26,7 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 | Verified crawler bypass for `ip.filter` (v4.5+) | Yes |
 | Queue batch lookup | Yes |
 | Benchmark / stress suite (`composer bench`) | Yes |
-| ASN geo in core | Planned (v4.7+) |
+| ASN geo in core | Yes (v4.7+) — asn_country primary + asn enrichment |
 
 ## torann/geoip
 

@@ -181,6 +181,11 @@ final class IpInfoQuery
         return $this->result()->isAsn(...$asns);
     }
 
+    public function whereAsn(int ...$asns): bool
+    {
+        return $this->result()->whereAsn(...$asns);
+    }
+
     public function isCity(string ...$cities): bool
     {
         return $this->result()->isCity(...$cities);

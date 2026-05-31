@@ -6,12 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-## [Unreleased]
+## [4.7.8] - 2026-05-31
 
 ### Fixed
 
 - Pint code style issues that failed the GitHub Actions **Tests** workflow.
 - `UpdateMaxMindCommandTest` resolves MMDB path via `MaxMindCatalog` (fixes PHP 8.2 / Laravel 10–11 CI matrix).
+
+### Changed
+
+- Published stub version bumped to `4.7.8`.
 
 ## [4.7.7] - 2026-05-30
 

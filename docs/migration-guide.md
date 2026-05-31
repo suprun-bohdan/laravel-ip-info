@@ -135,6 +135,12 @@ New `.env` keys:
 
 Existing v1 cache entries continue to work; they upgrade to v2 on the next cache miss.
 
+## Upgrading to 4.7.8
+
+Patch release — no breaking changes. Fixes CI (Pint + PHP 8.2 test matrix).
+
+1. `composer update suprun-bohdan/laravel-ip-info`
+
 ## Upgrading to 4.7.5
 
 Patch release — no breaking changes.

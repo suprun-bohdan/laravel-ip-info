@@ -13,7 +13,7 @@ request memo → Laravel cache (positive) → Laravel cache (negative) → provi
 | Layer | What it does | Typical cost |
 |-------|----------------|--------------|
 | **Request memo** | Reuses result within the same HTTP request (`client_country()` called twice) | ~0 ms |
-| **Positive cache** | Stores country code after first hit (`IP_INFO_CACHE_TTL`, default 24h) | ~0.03 ms/op |
+| **Positive cache** | Stores geo payload (v4.7+) or country code (v1 legacy) after first hit | ~0.03–0.05 ms/op |
 | **Negative cache** | Remembers “no country” misses (`IP_INFO_CACHE_NEGATIVE_TTL`, default 5 min) | ~0.05 ms/op |
 | **`local` provider** | Skips external lookup for private/reserved IPs | ~0 ms |
 | **`location_db` (MMDB)** | Offline DB-IP lookup, IPv4 + IPv6 | ~0.1 ms/op |
@@ -27,9 +27,19 @@ This matches the package goals:
 - **Clean & consistent** — one API (`ip_info()`, helpers, middleware)
 - **Fast & cache-first** — cache and request memo before any disk/network I/O
 
-### Cache note (v4.6)
+### Cache note (v4.7)
 
-The Laravel cache stores **country code only**. After a cache hit, `city()`, `region()`, and `coordinates()` are not restored from cache — only country. For city-level data on every request, use request memo within one request or extend caching in your app.
+From v4.7, positive cache entries use **v2 JSON keys** (`laravel_ip_info:v2:{ip}`) and preserve whitelisted geo fields (city, region, timezone, ASN) according to `location_db.fields`. Legacy v1 country-only entries still work as fallback.
+
+Disable extended cache payload:
+
+```env
+IP_INFO_CACHE_STORE_GEO_FIELDS=false
+```
+
+### Cache note (v4.6, superseded by v4.7)
+
+Earlier releases stored **country code only** in v1 cache keys.
 
 ## Run micro-benchmarks
 

@@ -35,6 +35,33 @@ final class LocationDbCatalogTest extends TestCase
         $this->assertStringContainsString('dbip-city-ipv6.mmdb', (string) $catalog->downloadUrl('city', 'ipv6'));
     }
 
+    public function test_it_resolves_asn_download_urls_from_routeviews(): void
+    {
+        config([
+            'ip-info.location_db.source' => 'dbip',
+            'ip-info.location_db.sources' => array_merge(
+                (array) config('ip-info.location_db.sources', []),
+                [
+                    'routeviews' => [
+                        'asn_country' => [
+                            'ipv4' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/asn-country-mmdb/asn-country-ipv4.mmdb',
+                            'ipv6' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/asn-country-mmdb/asn-country-ipv6.mmdb',
+                        ],
+                        'asn' => [
+                            'ipv4' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/asn-mmdb/asn-ipv4.mmdb',
+                            'ipv6' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/asn-mmdb/asn-ipv6.mmdb',
+                        ],
+                    ],
+                ],
+            ),
+        ]);
+
+        $catalog = $this->app->make(LocationDbCatalog::class);
+
+        $this->assertStringContainsString('asn-ipv4.mmdb', (string) $catalog->downloadUrl('asn', 'ipv4'));
+        $this->assertStringContainsString('asn-country-ipv4.mmdb', (string) $catalog->downloadUrl('asn_country', 'ipv4'));
+    }
+
     public function test_file_paths_include_edition_and_ip_version(): void
     {
         $storageDir = storage_path('testing/location-db');

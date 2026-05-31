@@ -165,4 +165,24 @@ final class IpInfoQuery
     {
         return $this->result()->coordinates();
     }
+
+    public function asn(): ?int
+    {
+        return $this->result()->asn();
+    }
+
+    public function asnOrganization(): ?string
+    {
+        return $this->result()->asnOrganization();
+    }
+
+    public function isAsn(int ...$asns): bool
+    {
+        return $this->result()->isAsn(...$asns);
+    }
+
+    public function isCity(string ...$cities): bool
+    {
+        return $this->result()->isCity(...$cities);
+    }
 }

@@ -221,7 +221,10 @@ Blade: `@highrisk` … `@endhighrisk` wraps content when risk level is high.
     Hosting / datacenter IP
 @endhosting
 
+> **v4.7+:** Cache v2 stores a JSON geo payload (country + whitelisted fields such as city/region/timezone/ASN). Set `IP_INFO_CACHE_STORE_GEO_FIELDS=false` to restore country-only v1 cache keys.
+
 Country: @clientcountry('XX')
+City: @clientcity('Unknown')
 IP: @clientip
 Anonymized: @anonymizedclientip
 ```
@@ -264,6 +267,7 @@ Components use `ClientGeoData` and `ip_info()->threats()` only — no live WHOIS
 | `ip_info(?string $ip = null)` | `IpInfoQuery` | Current request when `$ip` omitted |
 | `client_country(?Request $r = null, ?string $default = null)` | `?string` | Uses request memo + cache |
 | `client_city(?Request $r = null, ?string $default = null)` | `?string` | City from offline MMDB (v4.6+) |
+| `client_asn(?Request $r = null, ?int $default = null)` | `?int` | ASN from offline enrichment (v4.7+) |
 | `client_ip(?Request $r = null)` | `string` | Reuses middleware attribute when set |
 | `client_ip_info(?Request $r = null)` | `IpInfoResult` | Full DTO |
 | `normalize_ip(string $ip)` | `string` | Canonical IP (v4.3+) |
@@ -327,7 +331,7 @@ make docker-stress     # above + HTTP wrk stress (offline MMDB)
 
 User guide: **[docs/benchmarks.md](docs/benchmarks.md)** · Maintainer options: [bench/README.md](bench/README.md)
 
-> Cache stores **country code only** — after a cache hit, `city()` / `region()` are null until you add app-level caching or use request memo within the same request.
+> **v4.7+:** Cache v2 (`:v2:` keys) stores a JSON geo payload — city, region, timezone, and ASN survive cache hits when enabled via `IP_INFO_CACHE_STORE_GEO_FIELDS=true` (default). Fields respect the `location_db.fields` whitelist.
 
 ## Security model (client IP)
 
@@ -536,6 +540,8 @@ File: `config/ip-info.php`
 | `ip-info:install --with-schedule` | Append update stubs to `routes/console.php` |
 | `ip-info:install --with-location-db` | Download country MMDB (IPv4 + IPv6) |
 | `ip-info:install --with-location-db=city` | Download city MMDB edition |
+| `ip-info:install --with-location-db=asn_country` | Download ASN-country MMDB (CC0, v4.7+) |
+| `ip-info:install --with-asn-db` | Download ASN enrichment MMDB (v4.7+) |
 | `ip-info:install --preset=offline` | Chain without HTTP (`location_db`) |
 | `ip-info:refresh-cloudflare-cidrs` | Fetch Cloudflare egress CIDRs for `.env` |
 | `ip-info:sync` | Audit integration (config, middleware, routes, security) |

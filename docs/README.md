@@ -69,6 +69,7 @@ php artisan ip-info:diagnose
 
 | Version | Highlights |
 |---------|------------|
+| **4.7** | Cache v2 geo payload, ASN MMDB editions, Blade `@clientcity`, frontend `expose_city` |
 | **4.6** | Offline MMDB geo (`location_db`), IPv6, city/region/timezone, benchmarks & stress suite |
 | **4.5** | IP risk score, per-reason filter responses, verified crawlers |
 | **4.4** | Blade directives and dev components |

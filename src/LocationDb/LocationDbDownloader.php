@@ -16,7 +16,7 @@ final class LocationDbDownloader
      */
     public function download(string $edition, bool $force = false): array
     {
-        if (! in_array($edition, ['country', 'city'], true)) {
+        if (! $this->catalog->isDownloadEdition($edition)) {
             throw new \InvalidArgumentException("Unsupported location DB edition [{$edition}].");
         }
 

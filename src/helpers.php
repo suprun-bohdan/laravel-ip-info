@@ -61,6 +61,15 @@ if (! function_exists('client_city')) {
     }
 }
 
+if (! function_exists('client_asn')) {
+    function client_asn(?Request $request = null, ?int $default = null): ?int
+    {
+        $asn = client_ip_info($request)->asn();
+
+        return $asn ?? $default;
+    }
+}
+
 if (! function_exists('client_ip')) {
     function client_ip(?Request $request = null): string
     {

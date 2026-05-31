@@ -6,6 +6,12 @@ namespace SuprunBohdan\IpInfo\LocationDb;
 
 final class LocationDbCatalog
 {
+    /** @var list<string> */
+    public const PRIMARY_EDITIONS = ['country', 'city', 'asn_country'];
+
+    /** @var list<string> */
+    public const DOWNLOAD_EDITIONS = ['country', 'city', 'asn_country', 'asn'];
+
     /**
      * @return list<string>
      */
@@ -23,7 +29,22 @@ final class LocationDbCatalog
     {
         $edition = (string) config('ip-info.location_db.edition', 'country');
 
-        return in_array($edition, ['country', 'city'], true) ? $edition : 'country';
+        return in_array($edition, self::PRIMARY_EDITIONS, true) ? $edition : 'country';
+    }
+
+    public function isPrimaryEdition(string $edition): bool
+    {
+        return in_array($edition, self::PRIMARY_EDITIONS, true);
+    }
+
+    public function isDownloadEdition(string $edition): bool
+    {
+        return in_array($edition, self::DOWNLOAD_EDITIONS, true);
+    }
+
+    public function asnEditionInstalled(): bool
+    {
+        return $this->isInstalled('asn');
     }
 
     public function source(): string
@@ -43,22 +64,17 @@ final class LocationDbCatalog
 
     public function downloadUrl(string $edition, string $ipVersion): ?string
     {
-        $sources = config('ip-info.location_db.sources', []);
+        $url = $this->resolveDownloadUrl($this->source(), $edition, $ipVersion);
 
-        if (! is_array($sources)) {
-            return null;
+        if ($url !== null) {
+            return $url;
         }
 
-        $source = $this->source();
-        $editionUrls = $sources[$source][$edition] ?? null;
-
-        if (! is_array($editionUrls)) {
-            return null;
+        if (in_array($edition, ['asn', 'asn_country'], true)) {
+            return $this->resolveDownloadUrl('routeviews', $edition, $ipVersion);
         }
 
-        $url = $editionUrls[$ipVersion] ?? null;
-
-        return is_string($url) && $url !== '' ? $url : null;
+        return null;
     }
 
     public function isInstalled(string $edition): bool
@@ -70,5 +86,24 @@ final class LocationDbCatalog
         }
 
         return true;
+    }
+
+    private function resolveDownloadUrl(string $source, string $edition, string $ipVersion): ?string
+    {
+        $sources = config('ip-info.location_db.sources', []);
+
+        if (! is_array($sources)) {
+            return null;
+        }
+
+        $editionUrls = $sources[$source][$edition] ?? null;
+
+        if (! is_array($editionUrls)) {
+            return null;
+        }
+
+        $url = $editionUrls[$ipVersion] ?? null;
+
+        return is_string($url) && $url !== '' ? $url : null;
     }
 }

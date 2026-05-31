@@ -24,5 +24,34 @@ final class ClientGeoDataTest extends TestCase
         $this->assertSame('UA', $geo->countryCode);
         $this->assertSame('UA', $geo->forFrontend()['country_code']);
         $this->assertArrayHasKey('client_geo', $request->attributes->all());
+        $this->assertArrayNotHasKey('city', $geo->forFrontend());
+    }
+
+    public function test_for_frontend_exposes_city_when_enabled(): void
+    {
+        config(['ip-info.frontend.expose_city' => true]);
+
+        $provider = new class implements \SuprunBohdan\IpInfo\Contracts\IpProvider
+        {
+            public function lookup(\SuprunBohdan\IpInfo\Data\IpAddress $ip): \SuprunBohdan\IpInfo\Data\ProviderResult
+            {
+                return \SuprunBohdan\IpInfo\Data\ProviderResult::hit(
+                    'UA',
+                    'test',
+                    new \SuprunBohdan\IpInfo\Data\GeoLocation('UA', city: 'Kyiv', region: '30'),
+                );
+            }
+        };
+
+        $this->app->make(\SuprunBohdan\IpInfo\Contracts\IpProviderResolver::class)
+            ->replace(new \SuprunBohdan\IpInfo\Providers\ChainProvider([$provider]));
+
+        $request = Request::create('/', 'GET', server: ['REMOTE_ADDR' => '203.0.113.10']);
+        (new ShareClientGeo)->handle($request, fn () => response('ok'));
+
+        $payload = ClientGeoData::fromRequest($request)->forFrontend();
+
+        $this->assertSame('Kyiv', $payload['city']);
+        $this->assertSame('30', $payload['region']);
     }
 }

@@ -19,6 +19,8 @@ final readonly class ClientGeoData implements JsonSerializable
         public bool $isEu,
         public bool $isPublic,
         public bool $isPrivate,
+        public ?string $city = null,
+        public ?string $region = null,
     ) {}
 
     public static function fromRequest(?Request $request = null): self
@@ -44,39 +46,34 @@ final readonly class ClientGeoData implements JsonSerializable
             isEu: $result->isEu(),
             isPublic: $result->isPublic,
             isPrivate: $result->isPrivate,
+            city: $result->city(),
+            region: $result->region(),
         );
     }
 
     /**
-     * @return array{
-     *     country_code: ?string,
-     *     country_name: ?string,
-     *     continent: ?string,
-     *     is_eu: bool,
-     *     is_public: bool
-     * }
+     * @return array<string, mixed>
      */
     public function forFrontend(): array
     {
-        return [
+        $payload = [
             'country_code' => $this->countryCode,
             'country_name' => $this->countryName,
             'continent' => $this->continent,
             'is_eu' => $this->isEu,
             'is_public' => $this->isPublic,
         ];
+
+        if (config('ip-info.frontend.expose_city', false)) {
+            $payload['city'] = $this->city;
+            $payload['region'] = $this->region;
+        }
+
+        return $payload;
     }
 
     /**
-     * @return array{
-     *     ip: string,
-     *     country_code: ?string,
-     *     country_name: ?string,
-     *     continent: ?string,
-     *     is_eu: bool,
-     *     is_public: bool,
-     *     is_private: bool
-     * }
+     * @return array<string, mixed>
      */
     public function toArray(): array
     {
@@ -88,19 +85,13 @@ final readonly class ClientGeoData implements JsonSerializable
             'is_eu' => $this->isEu,
             'is_public' => $this->isPublic,
             'is_private' => $this->isPrivate,
+            'city' => $this->city,
+            'region' => $this->region,
         ];
     }
 
     /**
-     * @return array{
-     *     ip: string,
-     *     country_code: ?string,
-     *     country_name: ?string,
-     *     continent: ?string,
-     *     is_eu: bool,
-     *     is_public: bool,
-     *     is_private: bool
-     * }
+     * @return array<string, mixed>
      */
     public function jsonSerialize(): array
     {

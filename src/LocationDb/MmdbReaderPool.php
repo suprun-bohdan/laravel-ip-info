@@ -9,9 +9,8 @@ use SuprunBohdan\IpInfo\Support\IpValidator;
 
 class MmdbReaderPool
 {
-    private ?Reader $ipv4Reader = null;
-
-    private ?Reader $ipv6Reader = null;
+    /** @var array<string, Reader> */
+    private array $readers = [];
 
     public function __construct(
         private LocationDbCatalog $catalog,
@@ -21,7 +20,7 @@ class MmdbReaderPool
     /**
      * @return array<string, mixed>|null
      */
-    public function lookup(string $ip): ?array
+    public function lookup(string $ip, ?string $edition = null): ?array
     {
         if (! class_exists(Reader::class)) {
             return null;
@@ -31,7 +30,8 @@ class MmdbReaderPool
             return null;
         }
 
-        $reader = $this->readerFor($ip);
+        $edition ??= $this->catalog->edition();
+        $reader = $this->readerFor($ip, $edition);
 
         if ($reader === null) {
             return null;
@@ -49,44 +49,29 @@ class MmdbReaderPool
 
     public function __destruct()
     {
-        if ($this->ipv4Reader !== null) {
-            $this->ipv4Reader->close();
-        }
-
-        if ($this->ipv6Reader !== null) {
-            $this->ipv6Reader->close();
+        foreach ($this->readers as $reader) {
+            $reader->close();
         }
     }
 
-    private function readerFor(string $ip): ?Reader
+    private function readerFor(string $ip, string $edition): ?Reader
     {
-        $edition = $this->catalog->edition();
         $isIpv6 = str_contains($ip, ':');
+        $ipVersion = $isIpv6 ? 'ipv6' : 'ipv4';
+        $cacheKey = $edition.':'.$ipVersion;
 
-        if ($isIpv6) {
-            if ($this->ipv6Reader === null) {
-                $path = $this->catalog->filePath($edition, 'ipv6');
-
-                if (! is_readable($path)) {
-                    return null;
-                }
-
-                $this->ipv6Reader = new Reader($path);
-            }
-
-            return $this->ipv6Reader;
+        if (isset($this->readers[$cacheKey])) {
+            return $this->readers[$cacheKey];
         }
 
-        if ($this->ipv4Reader === null) {
-            $path = $this->catalog->filePath($edition, 'ipv4');
+        $path = $this->catalog->filePath($edition, $ipVersion);
 
-            if (! is_readable($path)) {
-                return null;
-            }
-
-            $this->ipv4Reader = new Reader($path);
+        if (! is_readable($path)) {
+            return null;
         }
 
-        return $this->ipv4Reader;
+        $this->readers[$cacheKey] = new Reader($path);
+
+        return $this->readers[$cacheKey];
     }
 }

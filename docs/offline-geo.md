@@ -87,6 +87,46 @@ Edit `config/ip-info.php`:
 
 The whitelist applies at **lookup mapping** time, not when downloading MMDB files.
 
+## ASN editions (v4.7+)
+
+Two optional RouteViews-based MMDB sets from [sapics/ip-location-db](https://github.com/sapics/ip-location-db):
+
+| Edition | Package | License | Use |
+|---------|---------|---------|-----|
+| `asn_country` | `@ip-location-db/asn-country-mmdb` | CC0 | Primary **country** lookup without DB-IP |
+| `asn` | `@ip-location-db/asn-mmdb` | CC BY 4.0 | **Enrichment** — ASN number + organization after geo hit |
+
+### Install ASN-country as primary edition
+
+```bash
+php artisan ip-info:install --with-location-db=asn_country --preset=offline --force
+```
+
+### Install ASN enrichment (alongside country/city)
+
+```bash
+php artisan ip-info:install --with-asn-db --force
+```
+
+```env
+IP_INFO_LOCATION_DB_ENRICH_ASN=true
+IP_INFO_LOCATION_DB_SOURCE=routeviews
+```
+
+Usage:
+
+```php
+$asn = ip_info()->asn();
+$org = ip_info()->asnOrganization();
+$asn = client_asn();
+```
+
+> **License:** ASN MMDB (`asn` edition) is CC BY 4.0 — attribute RouteViews / ip-location-db when displaying ASN data.
+
+## Cache v2 (v4.7+)
+
+Extended geo fields survive cache hits when `IP_INFO_CACHE_STORE_GEO_FIELDS=true` (default). Payload respects `location_db.fields`. Legacy v1 cache entries (country string only) remain supported.
+
 ## Keeping data fresh
 
 ```bash
@@ -95,6 +135,8 @@ php artisan ip-info:update-location-db --force
 
 # Switch edition
 php artisan ip-info:update-location-db --edition=city --force
+php artisan ip-info:update-location-db --edition=asn_country --force
+php artisan ip-info:update-location-db --edition=asn --force
 ```
 
 Optional schedule (append during install or sync):

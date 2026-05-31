@@ -97,6 +97,43 @@ use SuprunBohdan\IpInfo\Laravel\Database\Seeders\IpCountrySeeder;
 
 PSR-4 path: `src/Laravel/Database/Seeders/IpCountrySeeder.php`.
 
+## Upgrading to 4.7
+
+No breaking API changes. Recommended steps:
+
+1. `composer update suprun-bohdan/laravel-ip-info`
+2. Republish config for new keys: `php artisan vendor:publish --tag=ip-info-config`
+3. Optional — enable cache v2 geo fields (default `true`):
+
+```env
+IP_INFO_CACHE_STORE_GEO_FIELDS=true
+```
+
+4. Optional — ASN MMDB:
+
+```bash
+php artisan ip-info:install --with-asn-db --force
+# or primary asn_country edition:
+php artisan ip-info:install --with-location-db=asn_country --preset=offline --force
+```
+
+5. Optional — expose city in Inertia/SPA payloads:
+
+```env
+IP_INFO_FRONTEND_EXPOSE_CITY=true
+```
+
+New `.env` keys:
+
+| Key | Purpose |
+|-----|---------|
+| `IP_INFO_CACHE_STORE_GEO_FIELDS` | Cache v2 JSON geo payload (default `true`) |
+| `IP_INFO_LOCATION_DB_ENRICH_ASN` | Post-lookup ASN enrichment |
+| `IP_INFO_LOCATION_DB_EDITION=asn_country` | RouteViews country MMDB as primary |
+| `IP_INFO_FRONTEND_EXPOSE_CITY` | Include city/region in `ClientGeoData::forFrontend()` |
+
+Existing v1 cache entries continue to work; they upgrade to v2 on the next cache miss.
+
 ## Upgrading to 4.6
 
 New optional offline provider **`location_db`** — no breaking changes for existing installs.

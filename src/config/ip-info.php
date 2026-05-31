@@ -1,6 +1,6 @@
 <?php
 
-// @ip-info-stub-version 4.6.0
+// @ip-info-stub-version 4.7.0
 
 declare(strict_types=1);
 
@@ -17,6 +17,7 @@ return [
         'negative_ttl' => (int) env('IP_INFO_CACHE_NEGATIVE_TTL', 300),
         'prefix' => env('IP_INFO_CACHE_PREFIX', 'laravel_ip_info'),
         'tenant_prefix' => env('IP_INFO_TENANT_ID'),
+        'store_geo_fields' => env('IP_INFO_CACHE_STORE_GEO_FIELDS', true),
     ],
 
     /*
@@ -152,6 +153,7 @@ return [
         'storage_dir' => env('IP_INFO_LOCATION_DB_PATH', storage_path('app/ip-info/location-db')),
         'stale_days' => (int) env('IP_INFO_LOCATION_DB_STALE_DAYS', 30),
         'source' => env('IP_INFO_LOCATION_DB_SOURCE', 'dbip'),
+        'enrich_asn' => env('IP_INFO_LOCATION_DB_ENRICH_ASN', false),
         'fields' => ['country', 'city', 'region', 'postcode', 'latitude', 'longitude', 'timezone'],
         'sources' => [
             'dbip' => [
@@ -162,6 +164,16 @@ return [
                 'city' => [
                     'ipv4' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/dbip-city-mmdb/dbip-city-ipv4.mmdb',
                     'ipv6' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/dbip-city-mmdb/dbip-city-ipv6.mmdb',
+                ],
+            ],
+            'routeviews' => [
+                'asn_country' => [
+                    'ipv4' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/asn-country-mmdb/asn-country-ipv4.mmdb',
+                    'ipv6' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/asn-country-mmdb/asn-country-ipv6.mmdb',
+                ],
+                'asn' => [
+                    'ipv4' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/asn-mmdb/asn-ipv4.mmdb',
+                    'ipv6' => 'https://cdn.jsdelivr.net/npm/@ip-location-db/asn-mmdb/asn-ipv6.mmdb',
                 ],
             ],
         ],
@@ -359,6 +371,20 @@ return [
         'enabled' => env('IP_INFO_TELESCOPE_ENABLED', true),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Frontend payload (Inertia / SPA)
+    |--------------------------------------------------------------------------
+    */
+    'frontend' => [
+        'expose_city' => env('IP_INFO_FRONTEND_EXPOSE_CITY', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | HTTP routes (diagnostics)
+    |--------------------------------------------------------------------------
+    */
     'routes' => [
         'enabled' => env('IP_INFO_ROUTES_ENABLED', false),
         'path' => env('IP_INFO_ROUTE_PATH', '/ip-info'),

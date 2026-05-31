@@ -20,6 +20,7 @@ use SuprunBohdan\IpInfo\Jobs\ProcessIpLookups;
 use SuprunBohdan\IpInfo\Laravel\Events\IpLookupCompleted;
 use SuprunBohdan\IpInfo\Laravel\Events\IpLookupFailed;
 use SuprunBohdan\IpInfo\Laravel\Events\IpLookupStarted;
+use SuprunBohdan\IpInfo\LocationDb\AsnMmdbEnricher;
 use SuprunBohdan\IpInfo\Providers\ChainProvider;
 use SuprunBohdan\IpInfo\Resolvers\RequestIpResolver;
 use SuprunBohdan\IpInfo\Resolvers\StringIpResolver;
@@ -49,6 +50,7 @@ final class IpInfoManager implements IpLookupContract
         private IpCache $cache,
         private Dispatcher $events,
         private IpProviderResolver $providerResolver,
+        private AsnMmdbEnricher $asnEnricher,
     ) {}
 
     /**
@@ -257,12 +259,16 @@ final class IpInfoManager implements IpLookupContract
     {
         $isPrivate = $this->isPrivate($address);
         $isPublic = $this->isPublic($address);
-        $geo = $providerResult->geoLocation();
+        $geo = $this->asnEnricher->enrich($address, $providerResult->geoLocation());
         $countryCode = $geo->countryCode;
 
         if (! $this->fakeMode && config('ip-info.cache.enabled', true) && $isPublic) {
             if ($countryCode !== null) {
-                $this->cache->put($address, $countryCode);
+                if (config('ip-info.cache.store_geo_fields', true)) {
+                    $this->cache->putGeo($address, $geo);
+                } else {
+                    $this->cache->put($address, $countryCode);
+                }
             } elseif ($providerResult->shouldStopChain() && ! $providerResult->isHit()) {
                 $this->cache->putNegative($address);
             }
@@ -293,6 +299,14 @@ final class IpInfoManager implements IpLookupContract
 
         if ($this->cache->hasNegative($address)) {
             return $this->makeResult($address, null, $isPublic, $isPrivate, 'cache:negative');
+        }
+
+        if (config('ip-info.cache.store_geo_fields', true)) {
+            $cachedGeo = $this->cache->getGeo($address);
+
+            if ($cachedGeo !== null) {
+                return $this->makeResultFromGeo($address, $cachedGeo, $isPublic, $isPrivate, 'cache');
+            }
         }
 
         $cached = $this->cache->get($address);
@@ -332,9 +346,25 @@ final class IpInfoManager implements IpLookupContract
         bool $isPrivate,
         ?string $provider,
     ): IpInfoResult {
+        return $this->makeResultFromGeo(
+            $address,
+            GeoLocation::fromCountryCode($countryCode),
+            $isPublic,
+            $isPrivate,
+            $provider,
+        );
+    }
+
+    private function makeResultFromGeo(
+        IpAddress $address,
+        GeoLocation $geo,
+        bool $isPublic,
+        bool $isPrivate,
+        ?string $provider,
+    ): IpInfoResult {
         return new IpInfoResult(
             $address->value,
-            GeoLocation::fromCountryCode($countryCode),
+            $geo,
             $isPublic,
             $isPrivate,
             $provider,

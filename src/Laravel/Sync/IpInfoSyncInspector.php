@@ -286,6 +286,16 @@ final class IpInfoSyncInspector
 
         $contents = (string) file_get_contents($target);
 
-        return ! str_contains($contents, 'ip-info:update-database');
+        if (config('ip-info.database.enabled', false)
+            && ! str_contains($contents, 'ip-info:update-database')) {
+            return true;
+        }
+
+        if (config('ip-info.location_db.enabled', false)
+            && ! str_contains($contents, 'ip-info:update-location-db')) {
+            return true;
+        }
+
+        return false;
     }
 }

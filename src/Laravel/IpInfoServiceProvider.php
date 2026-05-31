@@ -92,6 +92,8 @@ use SuprunBohdan\IpInfo\Intel\FilterBlockResponseResolver;
 use SuprunBohdan\IpInfo\Intel\VerifiedCrawlerInspector;
 use SuprunBohdan\IpInfo\Laravel\Events\IpInfoBuildingChain;
 use SuprunBohdan\IpInfo\Laravel\Http\Middleware\BlockCountries;
+use SuprunBohdan\IpInfo\LocationDb\AsnMmdbEnricher;
+use SuprunBohdan\IpInfo\LocationDb\AsnMmdbRecordMapper;
 use SuprunBohdan\IpInfo\LocationDb\LocationDbCatalog;
 use SuprunBohdan\IpInfo\LocationDb\LocationDbDownloader;
 use SuprunBohdan\IpInfo\LocationDb\MmdbReaderPool;
@@ -133,7 +135,9 @@ final class IpInfoServiceProvider extends ServiceProvider
         $this->app->singleton(LocationDbCatalog::class);
         $this->app->singleton(LocationDbDownloader::class);
         $this->app->singleton(MmdbRecordMapper::class);
+        $this->app->singleton(AsnMmdbRecordMapper::class);
         $this->app->singleton(MmdbReaderPool::class);
+        $this->app->singleton(AsnMmdbEnricher::class);
         $this->app->singleton(ClientIpLogger::class);
         $this->app->singleton(StringIpResolver::class);
         $this->app->singleton(RequestIpResolver::class);
@@ -219,6 +223,7 @@ final class IpInfoServiceProvider extends ServiceProvider
                 $app->make(IpCache::class),
                 $app->make(Dispatcher::class),
                 $app->make(IpProviderResolver::class),
+                $app->make(AsnMmdbEnricher::class),
             );
         });
 

@@ -78,6 +78,52 @@ final class BladeDirectivesTest extends TestCase
         $this->assertSame('203.0.113.55', trim($compiled));
     }
 
+    public function test_city_directive_renders_matching_content(): void
+    {
+        $provider = new class implements IpProvider
+        {
+            public function lookup(IpAddress $ip): ProviderResult
+            {
+                return ProviderResult::hit(
+                    'UA',
+                    'test',
+                    new GeoLocation('UA', city: 'Kyiv'),
+                );
+            }
+        };
+
+        $this->app->make(IpProviderResolver::class)
+            ->replace(new ChainProvider([$provider]));
+        $this->withClientIp('203.0.113.10');
+
+        $compiled = View::make('ip-info::tests.city', [])->render();
+
+        $this->assertSame('city-visible', trim($compiled));
+    }
+
+    public function test_clientcity_directive_echoes_client_city(): void
+    {
+        $provider = new class implements IpProvider
+        {
+            public function lookup(IpAddress $ip): ProviderResult
+            {
+                return ProviderResult::hit(
+                    'UA',
+                    'test',
+                    new GeoLocation('UA', city: 'Lviv'),
+                );
+            }
+        };
+
+        $this->app->make(IpProviderResolver::class)
+            ->replace(new ChainProvider([$provider]));
+        $this->withClientIp('203.0.113.10');
+
+        $compiled = View::make('ip-info::tests.clientcity', [])->render();
+
+        $this->assertSame('Lviv', trim($compiled));
+    }
+
     public function test_dev_banner_component_renders_geo_and_structure(): void
     {
         IpInfo::fake(['203.0.113.10' => 'UA']);

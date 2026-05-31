@@ -22,8 +22,8 @@ final class UpdateLocationDbCommand extends Command
     {
         $edition = (string) ($this->option('edition') ?: $catalog->edition());
 
-        if (! in_array($edition, ['country', 'city'], true)) {
-            $this->error('Edition must be country or city.');
+        if (! $catalog->isDownloadEdition($edition)) {
+            $this->error('Edition must be one of: country, city, asn_country, asn.');
 
             return self::FAILURE;
         }

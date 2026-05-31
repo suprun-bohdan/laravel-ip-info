@@ -30,5 +30,10 @@ final class CachePrefixTest extends TestCase
             'laravel_ip_info:tenant-b:v1:8.8.8.8',
             $cache->key(new IpAddress('8.8.8.8')),
         );
+
+        $this->assertSame(
+            'laravel_ip_info:tenant-b:v2:8.8.8.8',
+            $cache->geoKey(new IpAddress('8.8.8.8')),
+        );
     }
 }

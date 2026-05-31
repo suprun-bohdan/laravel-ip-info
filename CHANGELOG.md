@@ -6,9 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.7.0] - 2026-05-30
+
 ### Added
 
-- User guide [docs/benchmarks.md](docs/benchmarks.md) — cache-first design, `composer bench`, `make docker-stress`.
+- **Cache v2:** JSON geo payload (`:v2:` cache keys) preserves city, region, timezone, and ASN fields on cache hits; v1 country-only entries remain supported.
+- Config `cache.store_geo_fields` (default `true`).
+- **ASN MMDB editions:** `asn_country` primary edition (RouteViews, CC0) and `asn` enrichment (CC BY 4.0) via `@ip-location-db`.
+- `AsnMmdbEnricher`, `AsnMmdbRecordMapper`; config `location_db.enrich_asn`.
+- `ip-info:install --with-location-db=asn_country` and `--with-asn-db`.
+- `ip-info:update-location-db --edition=asn_country|asn`.
+- Fluent API: `asn()`, `asnOrganization()`, `isAsn()`; helper `client_asn()`.
+- Blade `@clientcity`, `@city` / `@endcity`, `@unlesscity` / `@endunlesscity`.
+- Config `frontend.expose_city` for Inertia/SPA payloads via `ClientGeoData::forFrontend()`.
+- CI workflow `.github/workflows/stress.yml` (`workflow_dispatch` + `main` push, `make docker-stress`).
+
+### Changed
+
+- `IpInfoSyncInspector` requires `ip-info:update-location-db` schedule stub when `location_db` is enabled.
+- Published stub version bumped to `4.7.0`.
+- `ClientGeoData` includes optional `city` and `region` fields.
+
+### Fixed
+
+- City/region/timezone no longer lost after cache hit when using offline location DB.
 
 ## [4.6.0] - 2026-05-30
 

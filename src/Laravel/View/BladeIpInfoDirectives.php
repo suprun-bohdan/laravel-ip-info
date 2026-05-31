@@ -34,6 +34,30 @@ final class BladeIpInfoDirectives
             return "<?php echo e(client_country(default: {$expression})); ?>";
         });
 
+        Blade::directive('clientcity', static function (?string $expression = null): string {
+            if ($expression === null || trim($expression) === '') {
+                return '<?php echo e(client_city()); ?>';
+            }
+
+            return "<?php echo e(client_city(default: {$expression})); ?>";
+        });
+
+        Blade::directive('city', static function (string $expression): string {
+            return "<?php if (ip_info()->isCity({$expression})): ?>";
+        });
+
+        Blade::directive('endcity', static function (): string {
+            return '<?php endif; ?>';
+        });
+
+        Blade::directive('unlesscity', static function (string $expression): string {
+            return "<?php if (! ip_info()->isCity({$expression})): ?>";
+        });
+
+        Blade::directive('endunlesscity', static function (): string {
+            return '<?php endif; ?>';
+        });
+
         Blade::directive('geoblock', static function (string $expression): string {
             return "<?php if (ip_info()->isCountry({$expression})) { abort((int) config('ip-info.security.block_response_status', 403), (string) config('ip-info.security.block_response_message', 'Access from your country is not allowed.')); } ?>";
         });

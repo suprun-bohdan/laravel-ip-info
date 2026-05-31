@@ -37,6 +37,8 @@ final class IpInfoResultTest extends TestCase
             'latitude' => null,
             'longitude' => null,
             'timezone' => null,
+            'autonomous_system_number' => null,
+            'autonomous_system_organization' => null,
             'threats' => null,
         ];
 

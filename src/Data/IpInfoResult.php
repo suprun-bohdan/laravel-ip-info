@@ -97,6 +97,44 @@ final readonly class IpInfoResult implements JsonSerializable
         return $this->geo->timezone;
     }
 
+    public function asn(): ?int
+    {
+        return $this->geo->autonomousSystemNumber;
+    }
+
+    public function asnOrganization(): ?string
+    {
+        return $this->geo->autonomousSystemOrganization;
+    }
+
+    public function isAsn(int ...$asns): bool
+    {
+        $asn = $this->asn();
+
+        if ($asn === null) {
+            return false;
+        }
+
+        return in_array($asn, $asns, true);
+    }
+
+    public function isCity(string ...$cities): bool
+    {
+        $city = $this->city();
+
+        if ($city === null) {
+            return false;
+        }
+
+        foreach ($cities as $candidate) {
+            if (strcasecmp($candidate, $city) === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @return array{lat: float, lon: float}|null
      */
@@ -225,6 +263,8 @@ final readonly class IpInfoResult implements JsonSerializable
             'latitude' => $this->geo->latitude,
             'longitude' => $this->geo->longitude,
             'timezone' => $this->geo->timezone,
+            'autonomous_system_number' => $this->geo->autonomousSystemNumber,
+            'autonomous_system_organization' => $this->geo->autonomousSystemOrganization,
             'threats' => $this->threats?->toArray(),
         ];
     }

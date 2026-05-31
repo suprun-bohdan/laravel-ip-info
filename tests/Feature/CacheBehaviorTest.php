@@ -64,6 +64,6 @@ final class CacheBehaviorTest extends TestCase
 
         IpInfo::for($ip)->result();
 
-        $this->assertTrue(Cache::store('array')->has('laravel_ip_info:v1:'.$ip));
+        $this->assertTrue(Cache::store('array')->has('laravel_ip_info:v2:'.$ip));
     }
 }

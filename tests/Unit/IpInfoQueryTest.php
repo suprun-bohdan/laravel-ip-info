@@ -48,6 +48,7 @@ final class IpInfoQueryTest extends TestCase
             new NullIpCache,
             $this->app->make(Dispatcher::class),
             $resolver,
+            $this->app->make(\SuprunBohdan\IpInfo\LocationDb\AsnMmdbEnricher::class),
         );
 
         $query = new IpInfoQuery($manager, new IpAddress('8.8.8.8'));

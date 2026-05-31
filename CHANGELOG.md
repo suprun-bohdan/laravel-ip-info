@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [4.7.4] - 2026-05-30
+
+### Added
+
+- Conditional MMDB downloads for `location_db`: `If-None-Match` / `If-Modified-Since` using stored ETag headers in `metadata.json`.
+- `LocationDbCatalog::readMetadata()` and `metadataForFile()` helpers.
+- `LocationDbDownloadReport` with `downloaded` and `notModified` file lists.
+
+### Changed
+
+- `ip-info:update-location-db` reports `Not modified:` when origin returns HTTP 304.
+- Published stub version bumped to `4.7.4`.
+
 ## [4.7.3] - 2026-05-30
 
 ### Added

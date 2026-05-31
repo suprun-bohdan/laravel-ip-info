@@ -62,6 +62,63 @@ final class LocationDbCatalog
         return $this->storageDir().DIRECTORY_SEPARATOR.'metadata.json';
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function readMetadata(): ?array
+    {
+        $path = $this->metadataPath();
+
+        if (! is_readable($path)) {
+            return null;
+        }
+
+        $contents = file_get_contents($path);
+
+        if ($contents === false || $contents === '') {
+            return null;
+        }
+
+        /** @var array<string, mixed>|null $decoded */
+        $decoded = json_decode($contents, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function metadataForFile(string $edition, string $ipVersion): ?array
+    {
+        $metadata = $this->readMetadata();
+
+        if ($metadata === null) {
+            return null;
+        }
+
+        $files = $metadata['files'] ?? null;
+
+        if (! is_array($files)) {
+            return null;
+        }
+
+        foreach ($files as $file) {
+            if (! is_array($file)) {
+                continue;
+            }
+
+            if (($file['edition'] ?? null) === $edition && ($file['ip_version'] ?? null) === $ipVersion) {
+                return $file;
+            }
+
+            if (($file['path'] ?? null) === $this->filePath($edition, $ipVersion)) {
+                return $file;
+            }
+        }
+
+        return null;
+    }
+
     public function downloadUrl(string $edition, string $ipVersion): ?string
     {
         $url = $this->resolveDownloadUrl($this->source(), $edition, $ipVersion);

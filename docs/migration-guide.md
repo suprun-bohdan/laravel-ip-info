@@ -134,6 +134,13 @@ New `.env` keys:
 
 Existing v1 cache entries continue to work; they upgrade to v2 on the next cache miss.
 
+## Upgrading to 4.7.4
+
+Patch release — no breaking changes.
+
+1. `composer update suprun-bohdan/laravel-ip-info`
+2. Optional — run `ip-info:update-location-db` once to populate ETag metadata for conditional CDN downloads.
+
 ## Upgrading to 4.7.3
 
 Patch release — no breaking changes.

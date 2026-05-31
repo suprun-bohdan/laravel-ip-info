@@ -31,14 +31,18 @@ final class UpdateLocationDbCommand extends Command
         $this->info("Updating location DB edition [{$edition}]...");
 
         try {
-            $files = $downloader->download($edition, (bool) $this->option('force'));
+            $report = $downloader->download($edition, (bool) $this->option('force'));
 
-            if ($files === []) {
+            foreach ($report->downloaded as $file) {
+                $this->line('Downloaded: '.$file);
+            }
+
+            foreach ($report->notModified as $file) {
+                $this->line('Not modified: '.$file);
+            }
+
+            if (! $report->hasChanges()) {
                 $this->info('MMDB files already present. Use --force to re-download.');
-            } else {
-                foreach ($files as $file) {
-                    $this->line('Downloaded: '.$file);
-                }
             }
 
             $this->info('Location DB update complete.');

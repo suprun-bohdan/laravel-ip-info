@@ -161,6 +161,10 @@ php artisan ip-info:sync --json
 
 If MMDB files are missing or older than `stale_days`, sync/diagnose suggest running `ip-info:update-location-db --force`.
 
+### Conditional updates (v4.7.4+)
+
+`ip-info:update-location-db` sends `If-None-Match` / `If-Modified-Since` when local MMDB files and ETag metadata exist. HTTP **304** skips re-download (`Not modified:` in command output). Use `--force` to always fetch fresh files.
+
 ## Files on disk
 
 Default storage:

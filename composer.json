@@ -28,7 +28,8 @@
     "laravel/pint": "^1.0",
     "phpstan/phpstan": "^2.0",
     "larastan/larastan": "^3.0",
-    "illuminate/database": "^10.0|^11.0|^12.0"
+    "illuminate/database": "^10.0|^11.0|^12.0",
+    "maxmind-db/reader": "^1.11"
   },
   "autoload": {
     "psr-4": {
@@ -55,6 +56,7 @@
   },
   "scripts": {
     "test": "vendor/bin/phpunit",
+    "bench": "php bench/run.php",
     "analyse": "vendor/bin/phpstan analyse --memory-limit=512M",
     "format": "vendor/bin/pint",
     "format:test": "vendor/bin/pint --test",

@@ -28,11 +28,9 @@ jobs:
             illuminate/cache:12.* \
             illuminate/database:12.* \
             orchestra/testbench:^10.0 \
+            maxmind-db/reader:^1.11 \
             --no-interaction --no-update
           composer update --prefer-dist --no-interaction
 
-      - name: Run lookup benchmark
-        run: php bench/lookup.php
-
-      - name: Run batch benchmark
-        run: php bench/batch.php
+      - name: Run benchmark suite
+        run: php bench/run.php

@@ -17,5 +17,15 @@ services:
     working_dir: /package
     command: ["/bin/bash", "./docker/verify.sh"]
 
+  stress:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ..:/package
+      - laravel-test-app:/app
+    working_dir: /package
+    command: ["/bin/bash", "./docker/stress.sh"]
+
 volumes:
   laravel-test-app:

@@ -38,6 +38,15 @@ php artisan ip-info:install --preset=cloudflare
 php artisan ip-info:refresh-cloudflare-cidrs --write-env-snippet
 ```
 
+### Benchmarks and stress
+
+```bash
+composer bench      # micro-benchmarks (cache, MMDB)
+make docker-stress  # bench + HTTP wrk against Laravel app
+```
+
+Details: [bench/README.md](../bench/README.md)
+
 ### Audit your app integration
 
 ```bash

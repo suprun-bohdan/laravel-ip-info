@@ -13,6 +13,9 @@
 .phpunit.cache
 *.zip
 
+# Benchmark fixtures (downloaded MMDB)
+/bench/fixtures/
+
 # Cursor IDE and agent artifacts (never commit)
 .cursor/
 **/.cursor/

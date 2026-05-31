@@ -345,7 +345,17 @@ Run the full package suite and an ephemeral Laravel 11 app (path repo) inside Do
 ```bash
 make docker-test    # package PHPUnit only
 make docker-verify  # PHPUnit + Laravel integration
+make docker-stress  # benchmarks + HTTP wrk stress (offline MMDB)
 ```
+
+Micro-benchmarks only (no Docker):
+
+```bash
+composer bench
+# or: make bench
+```
+
+See [bench/README.md](bench/README.md) for cache hit/miss, MMDB, and `wrk` scenarios.
 
 No demo app is committed to the repository; `docker/verify.sh` bootstraps a temporary app in a Docker volume.
 
@@ -532,8 +542,10 @@ Public docs: **[docs/README.md](docs/README.md)**
 
 ```bash
 composer test
+composer bench
 composer analyse
 composer format:test
+make docker-stress
 ```
 
 Local Docker sandbox (gitignored): `cd sandbox && make init && make test`

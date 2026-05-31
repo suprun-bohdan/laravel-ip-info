@@ -4,6 +4,8 @@ RUN apt-get update && apt-get install -y \
     git \
     unzip \
     zip \
+    curl \
+    wrk \
     libzip-dev \
     && docker-php-ext-install sockets zip \
     && rm -rf /var/lib/apt/lists/*

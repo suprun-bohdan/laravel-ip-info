@@ -5,7 +5,7 @@
 [![Benchmarks](https://github.com/suprun-bohdan/laravel-ip-info/actions/workflows/bench.yml/badge.svg)](https://github.com/suprun-bohdan/laravel-ip-info/actions/workflows/bench.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Laravel package for IP detection, normalization, request IP resolution, geo lookup, caching, and infrastructure-aware IP intelligence.
+Laravel package for **smart IP resolution**, **geo lookup**, and **cache-first** IP intelligence — trusted proxies, provider chains, offline MMDB (IPv4 + IPv6), middleware, and testing fakes.
 
 Author: [Bohdan Suprun](mailto:bohdan-suprun@outlook.com)
 
@@ -308,6 +308,27 @@ IP_INFO_LOCATION_DB_ENABLED=true
 IP_INFO_LOCATION_DB_EDITION=country
 ```
 
+## Performance and cache-first design
+
+Lookups are **cache-first**: request memo → Laravel cache (positive + negative TTL) → provider chain. Private IPs never hit external providers.
+
+| Path | Typical latency |
+|------|-----------------|
+| Cache hit (same country code) | ~0.03 ms |
+| Offline MMDB (`location_db`) | ~0.1 ms |
+| HTTP provider (`quick_start`) | 50–500+ ms |
+
+Measure in your environment:
+
+```bash
+composer bench       # cache hit/miss + MMDB micro-benchmarks
+make docker-stress     # above + HTTP wrk stress (offline MMDB)
+```
+
+User guide: **[docs/benchmarks.md](docs/benchmarks.md)** · Maintainer options: [bench/README.md](bench/README.md)
+
+> Cache stores **country code only** — after a cache hit, `city()` / `region()` are null until you add app-level caching or use request memo within the same request.
+
 ## Security model (client IP)
 
 - **Never trust `X-Forwarded-For` blindly.** Headers are read only when the remote address matches `trusted_proxies.proxy_cidrs`, unless `require_trusted_proxy_for_headers=false`.
@@ -338,6 +359,15 @@ class ExampleTest extends TestCase
 
 `IpInfo::fake()` bypasses positive/negative cache and skips cache writes during tests.
 
+### Benchmarks and stress
+
+```bash
+composer bench       # micro-benchmarks: cache hit/miss, offline MMDB
+make docker-stress   # bench + HTTP wrk on ephemeral Laravel app
+```
+
+Full guide: **[docs/benchmarks.md](docs/benchmarks.md)** · Script reference: [bench/README.md](bench/README.md)
+
 ### Docker verification
 
 Run the full package suite and an ephemeral Laravel 11 app (path repo) inside Docker:
@@ -348,16 +378,14 @@ make docker-verify  # PHPUnit + Laravel integration
 make docker-stress  # benchmarks + HTTP wrk stress (offline MMDB)
 ```
 
-Micro-benchmarks only (no Docker):
+Micro-benchmarks without Docker:
 
 ```bash
 composer bench
 # or: make bench
 ```
 
-See [bench/README.md](bench/README.md) for cache hit/miss, MMDB, and `wrk` scenarios.
-
-No demo app is committed to the repository; `docker/verify.sh` bootstraps a temporary app in a Docker volume.
+No demo app is committed to the repository; `docker/verify.sh` and `docker/stress.sh` bootstrap a temporary app in a Docker volume.
 
 ## What this package does
 
@@ -366,7 +394,8 @@ No demo app is committed to the repository; `docker/verify.sh` bootstraps a temp
 - Resolves client IP from HTTP requests with trusted-proxy awareness.
 - Looks up country codes through a provider chain (`local`, `location_db`, `database`, `maxmind`, `http`, `cleantalk`).
 - Offline city, region, timezone, and coordinates via MMDB (`location_db`, v4.6+).
-- Caches lookups with configurable negative TTL.
+- Caches lookups with configurable positive and negative TTL (cache-first).
+- Built-in benchmarks and Docker stress tests for cache, MMDB, and HTTP paths.
 - Geo block/allow middleware, validation rules, sync/diagnose tooling.
 
 ## Requirements
@@ -516,6 +545,8 @@ File: `config/ip-info.php`
 | `ip-info:update-database` | Refresh offline IPv4 CSV |
 | `ip-info:update-location-db` | Download ip-location-db MMDB files |
 | `ip-info:update-maxmind` | Download GeoLite2-Country MMDB |
+| `composer bench` | Run cache + MMDB micro-benchmarks |
+| `make docker-stress` | Benchmarks + HTTP wrk stress (Docker) |
 
 ## Architecture
 
@@ -535,6 +566,7 @@ Public docs: **[docs/README.md](docs/README.md)**
 | Guide | Description |
 |-------|-------------|
 | [Offline geo](docs/offline-geo.md) | MMDB install, `.env`, city API, updates, troubleshooting (v4.6+) |
+| [Performance & benchmarks](docs/benchmarks.md) | Cache-first design, `composer bench`, `make docker-stress` |
 | [Migration guide](docs/migration-guide.md) | Upgrades and breaking changes |
 | [vs alternatives](docs/vs-alternatives.md) | Comparison with other Laravel geo packages |
 

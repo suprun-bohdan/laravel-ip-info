@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- User guide [docs/benchmarks.md](docs/benchmarks.md) — cache-first design, `composer bench`, `make docker-stress`.
+
 ## [4.6.0] - 2026-05-30
 
 ### Added
@@ -27,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Published stub version bumped to `4.6.0`.
 - Schedule stub includes monthly `ip-info:update-location-db`.
 - README and docs index updated for offline geo workflows.
+- Benchmark suite: `bench/cache-scenarios.php`, `bench/location-db.php`, `composer bench`, `make docker-stress` (cache, MMDB, HTTP wrk).
 
 ## [4.5.0] - 2026-05-30
 

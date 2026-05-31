@@ -377,8 +377,12 @@ Legacy `ip_country` SQL seed and `@country` Blade directives are unchanged. Use 
 
 ```bash
 composer test
+composer bench
 composer analyse
 make docker-verify   # PHPUnit + ephemeral Laravel app in Docker
+make docker-stress   # cache/MMDB benchmarks + HTTP wrk stress
 php artisan ip-info:diagnose --json
 php artisan ip-info:diagnose 8.8.8.8
 ```
+
+See [benchmarks.md](benchmarks.md) for interpreting bench output.

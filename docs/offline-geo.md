@@ -159,5 +159,6 @@ You can run **both** legacy CSV and `location_db` in the provider chain; `locati
 ## Related
 
 - [Main README](../README.md) — full package overview
+- [Performance & benchmarks](benchmarks.md) — cache-first design and stress tests
 - [Migration guide](migration-guide.md) — upgrading to 4.6+
 - [vs alternatives](vs-alternatives.md) — comparison with other packages

@@ -2,6 +2,8 @@
 
 Micro-benchmarks for regression detection and optional HTTP stress under Docker.
 
+User-facing overview: [docs/benchmarks.md](../docs/benchmarks.md).
+
 ## Quick run
 
 ```bash

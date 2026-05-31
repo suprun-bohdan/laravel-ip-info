@@ -25,6 +25,7 @@ Comparison for teams choosing an IP geolocation package for Laravel.
 | IP risk score + per-reason filter responses (v4.5+) | Yes |
 | Verified crawler bypass for `ip.filter` (v4.5+) | Yes |
 | Queue batch lookup | Yes |
+| Benchmark / stress suite (`composer bench`) | Yes |
 | ASN geo in core | Planned (v4.7+) |
 
 ## torann/geoip
